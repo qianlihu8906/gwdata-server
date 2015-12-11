@@ -181,18 +181,6 @@ int sensor_data_to_cloud(struct sensor_data *sd,char *cloud,int size)
         return len;
 }
 
-int heart_to_cloud(char *cloud,int size)
-{
-        const char *uuid = uuid_dvid_find_heartuuid();
-        int len = LENGTH_UUID + 2 + 1;
-        if(len > size)
-                return -1;
-        memcpy(cloud,uuid,LENGTH_UUID);
-        cloud[16] = (len&0xffff) >> 8;
-        cloud[17] = len & 0xff;
-        cloud[18] = REQ_HEARTBEAT;
-        return len;
-}
 
 struct sensor_data *slip_to_sensor_data(const char *slip,int len)
 {

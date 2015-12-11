@@ -3,6 +3,9 @@
 
 
 #define LENGTH_UUID     16
+#define TYPE_INDEX      18
+#define LENLO_INDEX     17
+#define LENHI_INDEX     16
 
 #define REQ_DATA        0x00
 #define RSP_DATA        0x01
@@ -17,6 +20,7 @@
 #define REQ_CUSTOM      0x0e
 #define RSP_CUSTOM      0x0f
 
+#define HEART_TIME      2000  
 int uuid_dvid_init();
 
 int uuid_dvid_string2uuid(const char *string,char *uuid);

@@ -19,6 +19,5 @@ void sensor_data_debug(struct sensor_data *sd);
 int sensor_data_to_slip(struct sensor_data *sd,char *slip,int size);
 struct sensor_data *slip_to_sensor_data(const char *slip,int len);
 
-int heart_to_cloud(char *cloud,int size);
 int sensor_data_to_cloud(struct sensor_data *sd,char *cloud,int size);
 #endif

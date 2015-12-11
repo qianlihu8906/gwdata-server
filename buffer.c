@@ -105,7 +105,7 @@ int buffer_read_cloud(struct buffer *buf,char *cloud,int size)
         if(buf->len < head_len){
                 return -1;
         }
-        int data_len = buf->buf[17]*256 + buf->buf[18];
+        int data_len = buf->buf[16]*256 + buf->buf[17];
         if(buf->len < data_len){
                 return -1;
         }
