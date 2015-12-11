@@ -20,7 +20,7 @@ DIRNAME     := dirname
 EXEC = gwdata-server
 
 
-SRCS := adlist.c ae.c anet.c buffer.c cJSON.c devices.c gw.c json_server.c protocal.c sdlist.c seriport.c p208_server.c debug.c protocal_208.c
+SRCS := adlist.c ae.c anet.c buffer.c cJSON.c devices.c gw.c json_server.c protocal.c sdlist.c seriport.c p208_server.c debug.c protocal_208.c uuid_dvid.c
 
 OBJS := $(SRCS:%.c=%.o)
 

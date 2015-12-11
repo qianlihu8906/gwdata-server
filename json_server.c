@@ -5,7 +5,6 @@
 #include <assert.h>
 #include <errno.h>
 
-
 #include <unistd.h>
 #include <time.h>
 
@@ -14,7 +13,8 @@
 #include "buffer.h"
 #include "seriport.h"
 #include "cJSON.h"
-
+#include "uuid_dvid.h"
+#include "debug.h"
 
 struct gw_json_client{
         uint64_t id;
@@ -67,7 +67,7 @@ static struct gw_json_client *gw_json_client_create(uint64_t id,int fd)
 
         c->id = server.json_next_client_id++;
         c->fd = fd;
-        c->report = 1;
+        c->report = 0;
 
         listAddNodeTail(server.json_clients,c);
 
@@ -265,9 +265,231 @@ static int cmd_set_sensor(struct gw_json_client *c,const char *cmd,cJSON *args,c
         return 0;
 }
 
+static int cmd_add_uuid(struct gw_json_client *c,const char *cmd,cJSON *args,cJSON *reply)
+{
+        char error[100] = {0};
+
+        if(args == NULL){
+                snprintf(error,sizeof(error),"%s args error",cmd);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+
+        cJSON *dvid = cJSON_GetObjectItem(args,"device_id");
+        if(dvid == NULL){
+                snprintf(error,sizeof(error),"%s need device_id",cmd);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+        cJSON *uuid = cJSON_GetObjectItem(args,"uuid");
+        if(uuid == NULL){
+                snprintf(error,sizeof(error),"%s need uuid",cmd);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+        uuid_dvid_init();
+        int device_id = dvid->valueint;
+        const char *uuid_str = uuid->valuestring;
+        char uuid_char[100] = {0};
+        int r = uuid_dvid_string2uuid(uuid_str,uuid_char);
+        if( r < 0){
+                snprintf(error,sizeof(error),"%s uuid error:%s",cmd,uuid_str);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+
+        uuid_dvid_add_record(uuid_char,device_id);
+        cJSON_AddStringToObject(reply,"err_msg","success");
+        uuid_dvid_debug();
+
+        return 0;
+
+}
+
+struct gw_cloud_client{
+        uint64_t id;
+        int fd;
+        struct buffer *recvbuf;
+};
+
+static void read_from_platform(aeEventLoop *el,int fd,void *client_data,int mask);
+
+int gw_cloud_broadcast(const char *buf,int len)
+{
+        struct gw_cloud_client *c;
+        
+        listNode *node;
+        listIter *iter = listGetIterator(server.cloud_clients,AL_START_HEAD);
+
+        while( (node=listNext(iter)) != NULL ){
+                c = node->value;
+                write(c->fd,buf,len);
+        }
+        listReleaseIterator(iter);
+
+        return 0;
+        
+}
+
+static struct gw_cloud_client *gw_cloud_client_create(uint64_t id,int fd)
+{
+        struct gw_cloud_client *c = malloc(sizeof(*c));
+        if(c == NULL)
+                return NULL;
+        anetNonBlock(NULL,fd);
+        c->recvbuf = buffer_create(1024);
+        if(server.tcpkeepalive)
+                anetKeepAlive(NULL,fd,server.tcpkeepalive);
+        if(aeCreateFileEvent(server.el,fd,AE_READABLE,read_from_platform,c) == AE_ERR){
+                close(fd);
+                buffer_release(c->recvbuf);
+                free(c);
+                return NULL;
+        }
+
+        c->id = server.cloud_next_client_id++;
+        c->fd = fd;
+        listAddNodeTail(server.cloud_clients,c);
+
+        return c;
+}
+
+static void gw_cloud_client_release(struct gw_cloud_client *c)
+{
+        listNode *ln = listSearchKey(server.cloud_clients,c);
+        assert(ln != NULL);
+
+        listDelNode(server.cloud_clients,ln);
+
+        aeDeleteFileEvent(server.el,c->fd,AE_READABLE);
+        aeDeleteFileEvent(server.el,c->fd,AE_WRITABLE);
+        close(c->fd);
+        buffer_release(c->recvbuf);
+        free(c);
+}
+
+static void read_from_platform(aeEventLoop *el,int fd,void *client_data,int mask)
+{
+        struct gw_cloud_client *c = client_data;
+#if 1
+        int nread = buffer_read_append(c->recvbuf,fd);
+        if(nread == -1){
+                if(errno == EAGAIN){
+                        return;
+                }else{
+                        fprintf(stdout,"Read from cloud: %s\n",strerror(errno));
+                        gw_cloud_client_release(c);
+                        return;
+                }
+        }else if(nread == 0){
+                fprintf(stdout,"cloud  closed connection\n");
+                gw_cloud_client_release(c);
+                return;
+        }
+
+        char buf[512] = {0};
+        int r = buffer_read_cloud(c->recvbuf,buf,sizeof(buf));
+        if(r > 0){
+                hexprint("recv cloud",buf,r);
+                if( (buf[16]&0x01) == 0){
+                        buf[16] = buf[16] + 1;
+                        buf[17] = 0;
+                        buf[18] = LENGTH_UUID + 2 + 1;
+                        write(fd,buf,buf[18]);
+                }
+                int dvid = uuid_dvid_find_dvid(buf);
+                if(dvid < 0)
+                        return;
+                struct sensor_data *sd = sdlist_find_by_id(server.global_sensor_data,dvid);
+                const char *transfer_type = "zigbee";
+                if(sd)
+                        transfer_type = sd->transfer_type;
+                struct gwseriport *s = find_transfer_media(transfer_type);
+                struct sensor_data *sd1;
+                int r;
+                char slip[256] = {0};
+
+                switch(buf[16]){    //type
+                        case REQ_SWITCH_ON:{
+                                sd1 = sensor_data_create(sd->id,sd->type,"true",transfer_type);
+                                r = sensor_data_to_slip(sd1,slip,sizeof(slip));
+                                if(r > 0){
+                                        write_seriport(s,slip,r);
+                                }
+                                sensor_data_release(sd1);
+                                break;
+                        }
+                        case REQ_SWITCH_OFF:
+                                sd1 = sensor_data_create(sd->id,sd->type,"false",transfer_type);
+                                r = sensor_data_to_slip(sd1,slip,sizeof(slip));
+                                if(r > 0){
+                                        write_seriport(s,slip,r);
+                                }
+                                sensor_data_release(sd1);
+                                break;
+                        default:
+                                break;
+                }
+        }
+#else
+        char buf[512] = {0};
+        int n = read(fd,buf,sizeof(buf));
+        hexprint("recv cloud",buf,n);
+#endif
+
+}
+
+static int gw_cloud_heartbeat(struct aeEventLoop *el,long long id,void *client_data)
+{
+        struct gw_cloud_client *c = client_data;
+        char buf[100] = {0};
+        int r = heart_to_cloud(buf,sizeof(buf));
+        write(c->fd,buf,r);
+        return 2000;
+}
+
+static void newCloudClient(aeEventLoop *el,int fd,void *client_data,int mask)
+{
+        struct gw_cloud_client *c = gw_cloud_client_create(server.cloud_next_client_id++,fd);
+        aeCreateTimeEvent(server.el,2000,gw_cloud_heartbeat,c,NULL);
+        aeDeleteFileEvent(el,fd,AE_WRITABLE);
+}
+
+static int cmd_connect_to_platfrom(struct gw_json_client *c,const char *cmd,cJSON *args,cJSON *reply)
+{
+        char error[100] = {0};
+
+        if(args == NULL){
+                snprintf(error,sizeof(error),"%s args error",cmd);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+
+        cJSON *ip = cJSON_GetObjectItem(args,"ip");
+        if(ip == NULL){
+                snprintf(error,sizeof(error),"%s need ip",cmd);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+        cJSON *port = cJSON_GetObjectItem(args,"port");
+        if(port == NULL){
+                snprintf(error,sizeof(error),"%s need port",cmd);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+        char *ipaddr = ip->valuestring;
+        int port_num = port->valueint;
+
+        int fd = anetTcpNonBlockConnect(error,ipaddr,port_num);
+        
+        aeCreateFileEvent(server.el,fd,AE_WRITABLE,newCloudClient,c);
+
+        return 0;
+}
+
 struct cmd {
         const char *cmd;
-        int (*func)(struct gw_json_client *c,const char *cmd,cJSON *,cJSON *reply);
+        int (*func)(struct gw_json_client *c,const char *cmd,cJSON *args,cJSON *reply);
 };
 
 static struct cmd cmds[]= {
@@ -277,6 +499,8 @@ static struct cmd cmds[]= {
         {"set_switch",cmd_set_sensor},
         {"set_lcd",cmd_set_sensor},
         {"set_sensor",cmd_set_sensor},
+        {"add_uuid",cmd_add_uuid},
+        {"connect_to_platform",cmd_connect_to_platfrom},
         {NULL,NULL}
 };
 

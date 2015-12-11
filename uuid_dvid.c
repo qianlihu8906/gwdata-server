@@ -41,13 +41,16 @@ static int hexstring2char(const char *start)
 
 int uuid_dvid_string2uuid(const char *string,char *uuid)
 {
-        int i;
+        int i,r;
         const char *p = string;
         for(i=0;i<LENGTH_UUID;i++){
-                uuid[i] = hexstring2char(p);
+                r = hexstring2char(p);
+                if(r < 0)
+                        return -1;
+                uuid[i] = r;
                 p += 2;
         }
-        return 0;
+        return LENGTH_UUID;
 }
 
 static list *L = NULL;
@@ -109,22 +112,6 @@ int uuid_dvid_init()
         return 0;
 }
 
-int uuid_dvid_add_record(const char *uuid,int dvid)
-{
-        struct map *m = map_create(uuid,dvid);
-        listAddNodeTail(L,m);
-
-        return 0;
-}
-
-int uuid_dvid_add_record_string(const char *uuidstring,int dvid)
-{
-        char uuid[LENGTH_UUID];
-        uuid_dvid_string2uuid(uuidstring,uuid);
-
-        return uuid_dvid_add_record(uuid,dvid);
-}
-
 static listNode *node_find_by_uuid(list *l,char *uuid)
 {
         l->match = _map_match_uuid;
@@ -137,6 +124,30 @@ static listNode *node_find_by_dvid(list *l,int dvid)
         l->match = _map_match_dvid;
         
         return listSearchKey(l,&dvid);
+}
+
+int uuid_dvid_add_record(const char *uuid,int dvid)
+{
+
+        listNode *n = node_find_by_dvid(L,dvid);
+        if(n == NULL){
+                struct map *m = map_create(uuid,dvid);
+                listAddNodeTail(L,m);
+        }else{
+                struct map *m = listNodeValue(n);
+                m->dvid = dvid;
+                memcpy(m->uuid,uuid,LENGTH_UUID);
+        }
+
+        return 0;
+}
+
+int uuid_dvid_add_record_string(const char *uuidstring,int dvid)
+{
+        char uuid[LENGTH_UUID];
+        uuid_dvid_string2uuid(uuidstring,uuid);
+
+        return uuid_dvid_add_record(uuid,dvid);
 }
 
 int uuid_dvid_find_dvid(char *uuid)
@@ -161,6 +172,16 @@ const char *uuid_dvid_find_uuid(int dvid)
 
 }
 
+const char *uuid_dvid_find_heartuuid()
+{
+        list *l = L;
+        listNode *n = l->head;
+        if(n == NULL)
+                return NULL;
+        struct map *m = n->value;
+        return m->uuid;
+}
+
 void uuid_dvid_del_uuid(char *uuid)
 {
         list *l = L;
@@ -175,6 +196,19 @@ void uuid_dvid_del_dvid(int dvid)
         listNode *n = node_find_by_dvid(l,dvid);
 
         return listDelNode(l,n);
+}
+
+void uuid_dvid_debug()
+{
+        list *l = L;
+        listNode *node;
+        listIter *iter = listGetIterator(l,AL_START_HEAD);
+
+        while( (node=listNext(iter)) != NULL ){
+                struct map *m = listNodeValue(node);
+                printf("dvid=%d\t",m->dvid);
+                hexprint("uuid:",m->uuid,LENGTH_UUID);
+        }
 }
 
 struct pkg_cloud{
@@ -228,6 +262,3 @@ int pkg_cloud_to_pkg(struct pkg_cloud *p,char *buf,int size)
 
         return len;
 }
-
-
-

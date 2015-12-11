@@ -8,6 +8,7 @@
 #include "anet.h"
 #include "adlist.h"
 #include "sdlist.h"
+#include "uuid_dvid.h"
 
 struct gwdata_server{
         int json_fd;
@@ -20,17 +21,20 @@ struct gwdata_server{
 
         list *json_clients;
         list *p208_clients;
+        list *cloud_clients;
         list *seriports;
 
         int tcpkeepalive;
         uint64_t json_next_client_id;
         uint64_t p208_next_client_id;
+        uint64_t cloud_next_client_id;
         char  json_neterr[256];
         char  p208_neterr[256];
+        char  cloud_neterr[256];
 
 
         list *global_sensor_data;
-
+        
 };
 
 extern struct gwdata_server server;

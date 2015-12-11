@@ -7,4 +7,5 @@
 void json_server_acceptHandler(aeEventLoop *el,int fd,void *privdata,int mask);
 int json_server_broadcast_str(const char *buf);
 
+int gw_cloud_broadcast(const char *buf,int len);
 #endif

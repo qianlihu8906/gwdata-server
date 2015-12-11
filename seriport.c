@@ -86,7 +86,11 @@ static void seriportHandler(aeEventLoop *el,int fd,void *privdata,int mask)
                         json_server_broadcast_str(json);
                         free(json);
                         cJSON_Delete(root);
-
+                        
+                        r = sensor_data_to_cloud(sd,buf,sizeof(buf));
+                        if(r > 0)
+                                gw_cloud_broadcast(buf,r);
+                        
                         snprintf(s->transfer_media,sizeof(s->transfer_media),"%s",sd->transfer_type);
                         sensor_data_release(sd);
 

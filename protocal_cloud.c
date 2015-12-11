@@ -8,7 +8,7 @@ static char *uuid_string_to_raw(const char *uuid,char *raw)
 {
 }
 
-static char *uuid_raw_to_string():q
+static char *uuid_raw_to_string()
 
 
 int sensor_data_to_pkg(struct sensor_data *sd,char *pkg,int size)

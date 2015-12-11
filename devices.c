@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 //#include <iconv.h>
 
 #include "devices.h"
@@ -31,6 +32,13 @@ static int temp_v2chararray(const char *str,char *buf,int len)
         return 8;
 }
 
+static int temp_v2cloud(const char *str,char *buf,int len)
+{
+        int value = atoi(str);
+        buf[0] = value;
+        return 1;
+}
+
 static const char *light_v2string(const char *data,int len,char *strbuf,int size) //本质上是将数组转换为字符串
 {
         int16_t value = *(int16_t*)data; //转换成16位数据，并将第一个数据赋值给value
@@ -48,6 +56,15 @@ static int light_v2chararray(const char *str,char *buf,int len) //本质上是将字符
         return 8;
 }
 
+static int light_v2cloud(const char *str,char *buf,int len)
+{
+        uint16_t value = atoi(str);
+        uint16_t v = htobe16(value);
+        memcpy(buf,&v,sizeof(v));
+
+        return sizeof(v);
+}
+
 static const char* led_v2string(const char *data,int len,char *strbuf,int size)
 {
         int v = data[0];
@@ -61,7 +78,6 @@ static const char* led_v2string(const char *data,int len,char *strbuf,int size)
 
 static int led_v2chararray(const char* str,char *buf,int len)
 {
-
         if(strcasecmp(str,"true") == 0){
                 buf[0] = 1;
         }else{
@@ -69,7 +85,17 @@ static int led_v2chararray(const char* str,char *buf,int len)
         }
         return 8;
 }
-static const char * acceleration_v2string(const char *data,int len,char *strbuf,int size)
+
+static int led_v2cloud(const char *str,char *buf,int len)
+{
+        if(strcasecmp(str,"true") == 0){
+                buf[0] = 1;
+        }else{
+                buf[0] = 3;
+        }
+        return 1;
+}
+static const char *acceleration_v2string(const char *data,int len,char *strbuf,int size)
 {
          signed short int Ax = data[0]|data[1]<<8;
          signed short int Ay = data[2]|data[3]<<8;
@@ -82,9 +108,15 @@ static const char * acceleration_v2string(const char *data,int len,char *strbuf,
          
          return strbuf;
 }
+
 static int acceleration_v2chararray(const char* str,char *buf,int len)
 {
         return 0;       
+}
+
+static int acceleration_v2cloud(const char *str,char *buf,int len)
+{
+        return 0;
 }
 
 static const char * magnetic_v2string(const char *data,int len,char *strbuf,int size)
@@ -118,6 +150,11 @@ static int magnetic_v2chararray(const char* str,char *buf,int len)
         return 8;
 }
 
+static int magnetic_v2cloud(const char *str,char *buf,int len)
+{
+        return 0;
+}
+
 static const char *rfid_v2string(const char *data,int len,char *strbuf,int size)
 {
         int32_t value = *(int32_t*)data; //转换成32位数据，并将第一个数据赋值给value
@@ -130,6 +167,13 @@ static int rfid_v2chararray(const char *str,char *buf,int len)
 {
         return 0;
 }
+static int rfid_v2cloud(const char *str,char *buf,int len)
+{
+        int32_t value = atoi(str);
+        uint32_t v = htole32(value);
+        memcpy(buf,&v,sizeof(v));
+        return sizeof(v);
+}
 static const char *temp_and_humi_v2string(const char *data,int len,char *strbuf,int size)
 {
         int humi = (unsigned char)data[0];
@@ -141,6 +185,11 @@ static const char *temp_and_humi_v2string(const char *data,int len,char *strbuf,
 }
 
 static int temp_and_humi_v2chararray(const char *str,char *buf,int len)
+{
+        return 0;
+}
+
+static int temp_and_humi_v2cloud(const char *str,char *buf,int len)
 {
         return 0;
 }
@@ -168,12 +217,23 @@ static int closet_v2charray(const char *str,char *buf,int len)
 {
         if(strcasecmp(str,"left") == 0){
                 buf[0] = 1;
-        }else if(strcasecmp(str,"right")){
+        }else if(strcasecmp(str,"right") == 0){
                 buf[0] = 2;
         }else{
                 buf[0] = 3;
         }
         return 8;
+}
+static int closet_v2cloud(const char *str,char *buf,int len)
+{
+        if(strcasecmp(str,"left") == 0){
+                buf[0] = 1;
+        }else if(strcasecmp(str,"right") == 0){
+                buf[0] = 2;
+        }else{
+                buf[0] = 3;
+        }
+        return 1;
 }
 
 #if 0  //{食品溯源
@@ -228,33 +288,34 @@ struct devices
         int type; 
         const char *(*v2string)(const char *data,int len,char *strbuf,int size);
         int (*v2chararray)(const char *str,char *buf,int len);
+        int (*v2cloud)(const char *str,char *buf,int len);
 };
 
 
 static struct  devices devices[] = {
-        {0x10,temp_v2string,temp_v2chararray}, //温度
-        {0x11,temp_v2string,temp_v2chararray}, //湿度
-        {0x12,light_v2string,light_v2chararray}, //光照
-        {0x16,light_v2string,light_v2chararray}, //气压
-        {0x13,light_v2string,light_v2chararray}, //可燃气体
-        {0x1d,light_v2string,light_v2chararray}, //烟雾
-        {0x1a,light_v2string,light_v2chararray}, //二氧化碳
-        {0x18,led_v2string,led_v2chararray},     //继电器
-        {0x14,led_v2string,led_v2chararray},     //人体红外
-        {0x22,led_v2string,led_v2chararray},     //红外反射
-        {0x23,led_v2string,led_v2chararray},     //触摸按键
-        {0x24,led_v2string,led_v2chararray},     //声音
-        {0x25,led_v2string,led_v2chararray},     //雨滴
-        {0x26,led_v2string,led_v2chararray},     //火焰
-        {0x27,led_v2string,led_v2chararray},     //震动
-        {0x29,rfid_v2string,rfid_v2chararray},     //震动
-        {0x15,acceleration_v2string,acceleration_v2chararray}, //加速度
-        {0x20,magnetic_v2string,magnetic_v2chararray},  //磁场
-        {0x29,rfid_v2string,rfid_v2chararray},
-        {0x41,temp_and_humi_v2string,temp_and_humi_v2chararray},
+        {0x10,temp_v2string,temp_v2chararray,temp_v2cloud}, //温度
+        {0x11,temp_v2string,temp_v2chararray,temp_v2cloud}, //湿度
+        {0x12,light_v2string,light_v2chararray,light_v2cloud}, //光照
+        {0x16,light_v2string,light_v2chararray,light_v2cloud}, //气压
+        {0x13,light_v2string,light_v2chararray,light_v2cloud}, //可燃气体
+        {0x1d,light_v2string,light_v2chararray,light_v2cloud}, //烟雾
+        {0x1a,light_v2string,light_v2chararray,light_v2cloud}, //二氧化碳
+        {0x18,led_v2string,led_v2chararray,led_v2cloud},     //继电器
+        {0x14,led_v2string,led_v2chararray,led_v2cloud},     //人体红外
+        {0x22,led_v2string,led_v2chararray,led_v2cloud},     //红外反射
+        {0x23,led_v2string,led_v2chararray,led_v2cloud},     //触摸按键
+        {0x24,led_v2string,led_v2chararray,led_v2cloud},     //声音
+        {0x25,led_v2string,led_v2chararray,led_v2cloud},     //雨滴
+        {0x26,led_v2string,led_v2chararray,led_v2cloud},     //火焰
+        {0x27,led_v2string,led_v2chararray,led_v2cloud},     //震动
+        {0x29,rfid_v2string,rfid_v2chararray,rfid_v2cloud},     //震动
+        {0x15,acceleration_v2string,acceleration_v2chararray,acceleration_v2cloud}, //加速度
+        {0x20,magnetic_v2string,magnetic_v2chararray,magnetic_v2cloud},  //磁场
+        {0x29,rfid_v2string,rfid_v2chararray,rfid_v2cloud},
+        {0x41,temp_and_humi_v2string,temp_and_humi_v2chararray,temp_and_humi_v2cloud},
 //        {0x42,lcd_v2string,lcd_v2chararray},
-	{0x43,light_v2string,light_v2chararray}, //ph
-        {0x2A,closet_v2string,closet_v2charray},
+	{0x43,light_v2string,light_v2chararray,light_v2cloud}, //ph
+        {0x2A,closet_v2string,closet_v2charray,closet_v2cloud},
         
 };
 
@@ -284,4 +345,11 @@ int device_v2chararray(int id,int type,const char *str,char *buf,int size)
                 return -1;
 
         return d->v2chararray(str,buf,size);
+}
+int device_v2cloud(int id,int type,const char *str,char *buf,int size)
+{
+        struct devices *d = find_device(type);
+        if(d == NULL)
+                return -1;
+        return d->v2cloud(str,buf,size);
 }

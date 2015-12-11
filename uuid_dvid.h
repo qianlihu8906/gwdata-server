@@ -19,14 +19,20 @@
 
 int uuid_dvid_init();
 
+int uuid_dvid_string2uuid(const char *string,char *uuid);
+
 const char *uuid_dvid_find_uuid(int dvid);
 
 int uuid_dvid_find_dvid(char *uuid);
+
+const char *uuid_dvid_find_heartuuid();
 
 int uuid_dvid_add_record(const char *uuid,int dvid);
 
 void uuid_dvid_del_uuid(char *uuid);
 
 void uuid_dvid_del_dvid(int dvid);
+
+void uuid_dvid_debug();
 
 #endif

@@ -7,6 +7,7 @@
 
 #include "devices.h"
 #include "protocal.h"
+#include "uuid_dvid.h"
 #include "cJSON.h"
 
 struct sensor_data *sensor_data_create(int id,int type,const char *value,const char *transfer_type)
@@ -157,6 +158,41 @@ int sensor_data_to_slip(struct sensor_data *sd,char *slip,int size)
   
 }
 
+int sensor_data_to_cloud(struct sensor_data *sd,char *cloud,int size)
+{
+        const char *uuid = uuid_dvid_find_uuid(sd->id);
+        if(uuid == NULL)
+                return -1;
+        char buf[100] = {0};
+        int r = device_v2cloud(sd->id,sd->type,sd->value,buf,sizeof(buf));
+        if(r < 0)
+                return -1;
+        
+        int len = LENGTH_UUID + 2 + 1 + r;
+        if(len > size)
+                return -1;
+        memcpy(cloud,uuid,LENGTH_UUID);
+        cloud[16] = (len&0xffff) >> 8;
+        cloud[17] = len&0xff;
+        cloud[18] = REQ_DATA;
+
+        memcpy(cloud+19,buf,r);
+
+        return len;
+}
+
+int heart_to_cloud(char *cloud,int size)
+{
+        const char *uuid = uuid_dvid_find_heartuuid();
+        int len = LENGTH_UUID + 2 + 1;
+        if(len > size)
+                return -1;
+        memcpy(cloud,uuid,LENGTH_UUID);
+        cloud[16] = (len&0xffff) >> 8;
+        cloud[17] = len & 0xff;
+        cloud[18] = REQ_HEARTBEAT;
+        return len;
+}
 
 struct sensor_data *slip_to_sensor_data(const char *slip,int len)
 {
