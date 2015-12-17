@@ -76,7 +76,7 @@ static struct gw_json_client *gw_json_client_create(uint64_t id,int fd)
 
         c->id = server.json_next_client_id++;
         c->fd = fd;
-        c->report = 0;
+        c->report = 1;
 
         listAddNodeTail(server.json_clients,c);
 

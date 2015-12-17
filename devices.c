@@ -236,6 +236,254 @@ static int closet_v2cloud(const char *str,char *buf,int len)
         return 1;
 }
 
+#if 0
+static const char *xueya_v2string(const char *data,int len,char *strbuf,int size)
+{
+        if(data[0] == 0x5B){
+                strcpy(strbuf,"sleep");
+        }else if(data[0] == 0x5A){
+                strcpy(strbuf,"wakeup");
+        }else if(data[0] == 0x54){
+                snprintf(strbuf,size,"QYH:%02x,QYL:%02x",data[1],data[2]);
+        }else if(data[0] == 0x55){
+                snprintf(strbuf,size,"SSYH:%02x,SSYL:%02x,SZYH:%02x,SZYL:%02x,XL:%02x",data[1],data[2],data[3],data[4],data[5]);
+        }else if(data[0] == 0x56){
+                snprintf(strbuf,size,"X:%02x",data[1]);
+        }else{
+                strcpy(strbuf,"error");
+        }
+        return strbuf;
+}
+
+static int xueya_v2charray(const char *str,char *buf,int len)
+{
+        if(strcasecmp(str,"sleep") == 0){
+                buf[0] = 0xAB;
+                return 1;
+        }else if(strcasecmp(str,"wakeup") == 0){
+                buf[0] = 0xAA;
+                return 1;
+        }else if(strcasecmp(str,"start") == 0){
+                buf[0] = 0xA0;
+                return 1;
+        }else if(strcasecmp(str,"stop") == 0){
+                buf[0] = 0xA3;
+                return 1;
+        }else{
+                buf[0] = 0xAA;
+                return 1;
+        }
+}
+
+static int xueya_v2cloud(const char *str,char *buf,int len)
+{
+        buf[0] = 0;
+        return 1;
+}
+
+static const char *maibo_v2string(const char *data,int len,char *strbuf,int size)
+{
+        if(data[0] == 0xA0){
+                snprintf(strbuf,size,"MBH:%02x,MBL:%02x",data[1],data[2]);
+        }else if(data[0] == 0xA1){
+                snprintf(strbuf,size,"stop");
+        }else if(data[0] == 0xA4){
+                snprintf(strbuf,size,"adjust success");
+        }else if(data[0] == 0xA2){
+                snprintf(strbuf,size,"SN0:%02x,SN1:%02x,SN2:%02x,SN3:%02x",data[1],data[2],data[3],data[4]);
+        }else if(data[0] == 0xA3){
+                snprintf(strbuf,size,"T1:%02x,T2:%02x,T3:%02x,T4:%02x",data[1],data[2],data[3],data[4]);
+        }else{
+                snprintf(strbuf,size,"error");
+        }
+        return strbuf;
+}
+
+static int maibo_v2charray(const char *str,char *buf,int len)
+{
+        if(strcasecmp(str,"start") == 0){
+                buf[0] = 0xA0;
+                return 1;
+        }else if(strcasecmp(str,"stop") == 0){
+                buf[0] = 0xA1;
+                return 1;
+        }else if(strcasecmp(str,"read_id") == 0){
+                buf[0] = 0xA2;
+                return 1;
+        }else if(strcasecmp(str,"read_date") == 0){
+                buf[0] = 0xA3;
+                return 1;
+        }else if(strstr(str,"adjust_mb") != NULL){
+                char *start = strchr(str,':') + 1;
+                int x = atoi(start);
+                if(x > 0 && x < 16){
+                        buf[0] = 0xA4;
+                        buf[1] = x;
+                        return 2;
+                }
+                return 0;
+        }else{
+                buf[0] = 0xAA;
+                return 1;
+        }
+        
+}
+
+static int maibo_v2cloud(const char *str,char *buf,int len)
+{
+        buf[0] = 0;
+        return 1;
+}
+
+static const char *xindian_v2string(const char *data,int len,char *strbuf,int size)
+{
+        if(data[0] == 0xA0){
+                snprintf(strbuf,size,"MBH:%02x,MBL:%02x",data[1],data[2]);
+        }else if(data[0] == 0xA1){
+                snprintf(strbuf,size,"stop");
+        }else if(data[0] == 0xA2){
+                snprintf(strbuf,size,"SN0:%02x,SN1:%02x,SN2:%02x,SN3:%02x",data[1],data[2],data[3],data[4]);
+        }else if(data[0] == 0xA3){
+                snprintf(strbuf,size,"T1:%02x,T2:%02x,T3:%02x,T4:%02x",data[1],data[2],data[3],data[4]);
+        }else{
+                snprintf(strbuf,size,"error");
+        }
+        return strbuf;
+
+}
+
+static int xindian_v2charray(const char *str,char *buf,int len)
+{
+        if(strcasecmp(str,"start") == 0){
+                buf[0] = 0xA0;
+                return 1;
+        }else if(strcasecmp(str,"stop") == 0){
+                buf[0] = 0xA1;
+                return 1;
+        }else if(strcasecmp(str,"read_id") == 0){
+                buf[0] = 0xA2;
+                return 1;
+        }else if(strcasecmp(str,"read_date") == 0){
+                buf[0] = 0xA3;
+                return 1;
+        }else{
+                buf[0] = 0xAA;
+                return 1;
+        }
+        
+}
+
+static int xindian_v2cloud(const char *str,char *buf,int len)
+{
+        buf[0] = 0;
+        return 1;
+}
+
+static const char *tiwen_v2string(const char *data,int len,char *strbuf,int size)
+{
+        if(data[0] == 0xA0){
+                snprintf(strbuf,size,"TWH:%02x,TWL:%02x",data[1],data[2]);
+        }else if(data[0] == 0xA1){
+                snprintf(strbuf,size,"stop");
+        }else if(data[0] == 0xA2){
+                snprintf(strbuf,size,"SN0:%02x,SN1:%02x,SN2:%02x,SN3:%02x",data[1],data[2],data[3],data[4]);
+        }else if(data[0] == 0xA3){
+                snprintf(strbuf,size,"T1:%02x,T2:%02x,T3:%02x,T4:%02x",data[1],data[2],data[3],data[4]);
+        }else if(data[0] == 0xCA){
+                snprintf(strbuf,size,"adjust_up success");
+        }else if(data[0] == 0xCD){
+                snprintf(strbuf,size,"adjust_down success");
+        }else{
+                snprintf(strbuf,size,"error");
+        }
+        return strbuf;
+
+}
+
+static int tiwen_v2charray(const char *str,char *buf,int len)
+{
+        if(strcasecmp(str,"start") == 0){
+                buf[0] = 0xA0;
+                return 1;
+        }else if(strcasecmp(str,"stop") == 0){
+                buf[0] = 0xA1;
+                return 1;
+        }else if(strcasecmp(str,"read_id") == 0){
+                buf[0] = 0xA2;
+                return 1;
+        }else if(strcasecmp(str,"read_date") == 0){
+                buf[0] = 0xA3;
+                return 1;
+        }else if(strstr(str,"adjust_up") != NULL){
+                char *start = strchr(str,':') + 1;
+                int x = atoi(start);
+                buf[0] = 0xA4;
+                buf[1] = x;
+                return 2;
+        }else if(strstr(str,"adjust_down") != NULL){
+                char *start = strchr(str,':') + 1;
+                int x = atoi(start);
+                buf[0] = 0xA4;
+                buf[1] = x;
+                return 2;
+        }else{
+                buf[0] = 0xAA;
+                return 1;
+        }
+        
+
+}
+
+static int tiwen_v2cloud(const char *str,char *buf,int len)
+{
+        buf[0] = 0;
+        return 1;
+}
+
+static const char *xueyang_v2string(const char *data,int len,char *strbuf,int size)
+{
+        if(data[0] == 0xA0){
+                snprintf(strbuf,size,"MB:%02x,XY:%02x,XL:%02x",data[1],data[2],data[3]);
+        }else if(data[0] == 0xA1){
+                snprintf(strbuf,size,"stop");
+        }else if(data[0] == 0xA2){
+                snprintf(strbuf,size,"SN0:%02x,SN1:%02x,SN2:%02x,SN3:%02x",data[1],data[2],data[3],data[4]);
+        }else if(data[0] == 0xA3){
+                snprintf(strbuf,size,"T1:%02x,T2:%02x,T3:%02x,T4:%02x",data[1],data[2],data[3],data[4]);
+        }else{
+                snprintf(strbuf,size,"error");
+        }
+        return strbuf;
+}
+
+static int xueyang_v2chararray(const char *str,char *buf,int len)
+{
+        if(strcasecmp(str,"start") == 0){
+                buf[0] = 0xA0;
+                return 1;
+        }else if(strcasecmp(str,"stop") == 0){
+                buf[0] = 0xA1;
+                return 1;
+        }else if(strcasecmp(str,"read_id") == 0){
+                buf[0] = 0xA2;
+                return 1;
+        }else if(strcasecmp(str,"read_date") == 0){
+                buf[0] = 0xA3;
+                return 1;
+        }else{
+                buf[0] = 0xAA;
+                return 1;
+        }
+        
+}
+
+static int xueyang_v2cloud(const char *str,char *buf,int len)
+{
+        buf[0] = 0;
+        return 1;
+}
+#endif
+
 #if 0  //{Ê³Æ·ËÝÔ´
 static const char *lcd_v2string(const char *data,int len,char *strbuf,int size)
 {
