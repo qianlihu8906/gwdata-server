@@ -2,20 +2,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-//#include <iconv.h>
+#include <endian.h>
 
 #include "devices.h"
 #include "debug.h"
 
 #define ARRAY_SIZE(a)   (sizeof(a)/sizeof(a[0]))
 
-#ifdef  __ANDROID__
-
-#define le32toh(x) 
-#define le16toh(x)
-#define htole16(x)
-
-#endif
 
 static const char *temp_v2string(const char *data,int len,char *strbuf,int size)
 {
