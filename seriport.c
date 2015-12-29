@@ -15,6 +15,7 @@
 #include "buffer.h"
 #include "seriport.h"
 #include "json_server.h"
+#include "cloud_client.h"
 
 struct gwseriport{
         int fd;
@@ -76,17 +77,9 @@ static void seriportHandler(aeEventLoop *el,int fd,void *privdata,int mask)
                 if(sd != NULL){
                         sdlist_check_push(server.global_sensor_data,sd);
 
-                        cJSON * root = cJSON_CreateObject();
-                        cJSON_AddNumberToObject(root,"device_id",sd->id);
-                        cJSON_AddNumberToObject(root,"device_type",sd->type);
-                        cJSON_AddStringToObject(root,"transfer_type",sd->transfer_type);
-                        cJSON_AddStringToObject(root,"device_value",sd->value);
-                        cJSON_AddStringToObject(root,"timestamp",sd->asctime);
-                        char *json = cJSON_PrintUnformatted(root);
-                        json_server_broadcast_str(json);
-                        free(json);
-                        cJSON_Delete(root);
-
+                        json_server_broadcast(sd);
+                        gw_cloud_broadcast(sd);
+                        
                         snprintf(s->transfer_media,sizeof(s->transfer_media),"%s",sd->transfer_type);
                         sensor_data_release(sd);
 

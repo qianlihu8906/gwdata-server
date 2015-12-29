@@ -11,4 +11,5 @@ int buffer_read_append(struct buffer *buf,int fd);
 
 int buffer_read_slip(struct buffer *buf,char *slip,int size);
 int buffer_read_line(struct buffer *buf,char *line,int size);
+int buffer_read_cloud(struct buffer *buf,char *line,int size);
 #endif

@@ -19,11 +19,15 @@ void init_server()
 
         server.el = aeCreateEventLoop(1024);
 
+        server.cloud_clients = listCreate();
         server.json_clients = listCreate();
         server.p208_clients = listCreate();
         server.seriports = listCreate();
 
+
         server.json_next_client_id = 1;
+        server.p208_next_client_id = 1;
+        server.cloud_next_client_id = 1;
 
         server.json_fd = anetTcpServer(server.json_neterr,51001,NULL,511);
         anetNonBlock(NULL,server.json_fd);
@@ -41,7 +45,7 @@ void init_server()
 
         server.global_sensor_data = sdlist_create();
 
-
+        uuid_dvid_init();
 }
 
 int main()

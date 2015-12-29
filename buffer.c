@@ -4,6 +4,9 @@
 
 #include <unistd.h>
 
+#include "uuid_dvid.h"
+#include "debug.h"
+
 struct buffer{
         char *buf;
         int size;
@@ -94,4 +97,22 @@ int buffer_read_slip(struct buffer *buf,char *slip,int size)
 int buffer_read_line(struct buffer *buf,char *line,int size)
 {
         return buffer_read_sep(buf,'\n',line,size);
+}
+
+int buffer_read_cloud(struct buffer *buf,char *cloud,int size)
+{
+        int head_len = LENGTH_UUID + 2 + 1;
+        if(buf->len < head_len){
+                return -1;
+        }
+        int data_len = buf->buf[16]*256 + buf->buf[17];
+        if(buf->len < data_len){
+                return -1;
+        }
+        if(data_len > size){
+                return -1;
+        }
+        memcpy(cloud,buf->buf,data_len);
+        buf->len = 0;
+        return data_len;
 }

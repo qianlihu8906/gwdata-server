@@ -5,16 +5,16 @@
 #include <assert.h>
 #include <errno.h>
 
-
 #include <unistd.h>
 #include <time.h>
 
 #include "gw.h"
 #include "json_server.h"
+#include "cloud_client.h"
 #include "buffer.h"
 #include "seriport.h"
 #include "cJSON.h"
-
+#include "debug.h"
 
 struct gw_json_client{
         uint64_t id;
@@ -29,23 +29,32 @@ static void readQueryFromClient(aeEventLoop *el,int fd,void *client_data,int mas
 static void json_server_process_line(struct gw_json_client *c,const char *str);
 
 
-int json_server_broadcast_str(const char *buf)
+int json_server_broadcast(struct sensor_data *sd)
 {
+        cJSON * root = cJSON_CreateObject();
+        cJSON_AddNumberToObject(root,"device_id",sd->id);
+        cJSON_AddNumberToObject(root,"device_type",sd->type);
+        cJSON_AddStringToObject(root,"transfer_type",sd->transfer_type);
+        cJSON_AddStringToObject(root,"device_value",sd->value);
+        cJSON_AddStringToObject(root,"timestamp",sd->asctime);
+        char *json = cJSON_PrintUnformatted(root);
         struct gw_json_client *c;
         
         listNode *node;
         listIter *iter = listGetIterator(server.json_clients,AL_START_HEAD);
 
-        int len = strlen(buf);
+        int len = strlen(json);
         while( (node=listNext(iter)) != NULL ){
                 c = node->value;
                 if(c->report){
-                        write(c->fd,buf,len);
+                        write(c->fd,json,len);
                         write(c->fd,"\n",1);
                 }
         }
         listReleaseIterator(iter);
-        
+        free(json);
+        cJSON_Delete(root);
+
         return 0;
 }
 
@@ -265,9 +274,83 @@ static int cmd_set_sensor(struct gw_json_client *c,const char *cmd,cJSON *args,c
         return 0;
 }
 
+static int cmd_add_uuid(struct gw_json_client *c,const char *cmd,cJSON *args,cJSON *reply)
+{
+        char error[100] = {0};
+
+        if(args == NULL){
+                snprintf(error,sizeof(error),"%s args error",cmd);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+
+        cJSON *dvid = cJSON_GetObjectItem(args,"device_id");
+        if(dvid == NULL){
+                snprintf(error,sizeof(error),"%s need device_id",cmd);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+        cJSON *uuid = cJSON_GetObjectItem(args,"uuid");
+        if(uuid == NULL){
+                snprintf(error,sizeof(error),"%s need uuid",cmd);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+        uuid_dvid_init();
+        int device_id = dvid->valueint;
+        const char *uuid_str = uuid->valuestring;
+        char uuid_char[100] = {0};
+        int r = uuid_dvid_string2uuid(uuid_str,uuid_char);
+        if( r < 0){
+                snprintf(error,sizeof(error),"%s uuid error:%s",cmd,uuid_str);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+
+        uuid_dvid_add_record(uuid_char,device_id);
+        cJSON_AddStringToObject(reply,"err_msg","success");
+        uuid_dvid_debug();
+
+        return 0;
+
+}
+
+static int cmd_connect_to_platfrom(struct gw_json_client *c,const char *cmd,cJSON *args,cJSON *reply)
+{
+        char error[100] = {0};
+
+        if(args == NULL){
+                snprintf(error,sizeof(error),"%s args error",cmd);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+
+        cJSON *ip = cJSON_GetObjectItem(args,"ip");
+        if(ip == NULL){
+                snprintf(error,sizeof(error),"%s need ip",cmd);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+        cJSON *port = cJSON_GetObjectItem(args,"port");
+        if(port == NULL){
+                snprintf(error,sizeof(error),"%s need port",cmd);
+                cJSON_AddStringToObject(reply,"err_msg",error);
+                return -1;
+        }
+        char *ipaddr = ip->valuestring;
+        int port_num = port->valueint;
+
+        int fd = anetTcpNonBlockConnect(error,ipaddr,port_num);
+        
+        aeCreateFileEvent(server.el,fd,AE_WRITABLE,gw_cloud_new_client,c);
+        cJSON_AddStringToObject(reply,"err_msg","success");
+
+        return 0;
+}
+
 struct cmd {
         const char *cmd;
-        int (*func)(struct gw_json_client *c,const char *cmd,cJSON *,cJSON *reply);
+        int (*func)(struct gw_json_client *c,const char *cmd,cJSON *args,cJSON *reply);
 };
 
 static struct cmd cmds[]= {
@@ -277,6 +360,8 @@ static struct cmd cmds[]= {
         {"set_switch",cmd_set_sensor},
         {"set_lcd",cmd_set_sensor},
         {"set_sensor",cmd_set_sensor},
+        {"add_uuid",cmd_add_uuid},
+        {"connect_to_platform",cmd_connect_to_platfrom},
         {NULL,NULL}
 };
 
