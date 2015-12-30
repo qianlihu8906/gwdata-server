@@ -23,6 +23,8 @@ struct gw_cloud_client{
 static int heart_to_cloud(char *cloud,int size)
 {
         const char *uuid = uuid_dvid_find_heartuuid();
+        if(uuid == NULL)
+                return -1;
         int len = LENGTH_UUID + 2 + 1;
         if(len > size)
                 return -1;
@@ -41,8 +43,9 @@ int gw_cloud_broadcast(struct sensor_data *sd)
         listNode *node;
 
         int r = sensor_data_to_cloud(sd,buf,sizeof(buf));
-        if(r < 0)
+        if(r < 0){
                 return -1;
+        }
 
         listIter *iter = listGetIterator(server.cloud_clients,AL_START_HEAD);
 

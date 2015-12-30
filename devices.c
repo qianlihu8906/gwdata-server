@@ -229,7 +229,7 @@ static int closet_v2cloud(const char *str,char *buf,int len)
         return 1;
 }
 
-#if 0
+#if 1
 static const char *xueya_v2string(const char *data,int len,char *strbuf,int size)
 {
         if(data[0] == 0x5B){
@@ -557,6 +557,7 @@ static struct  devices devices[] = {
 //        {0x42,lcd_v2string,lcd_v2chararray},
 	{0x43,light_v2string,light_v2chararray,light_v2cloud}, //ph
         {0x2A,closet_v2string,closet_v2charray,closet_v2cloud},
+        {0x44,tiwen_v2string,tiwen_v2charray,tiwen_v2cloud},
         
 };
 
