@@ -9,86 +9,102 @@
 
 #define ARRAY_SIZE(a)   (sizeof(a)/sizeof(a[0]))
 
-
-static const char *temp_v2string(const char *data,int len,char *strbuf,int size)
+static cJSON *temp_v2json(int id,const char *data,int len)
 {
-        int value = data[1];
-        snprintf(strbuf,size,"%d",value);
-        return strbuf;
+        int v = data[1];
+        char buf[128] = {0};
+        snprintf(buf,sizeof(buf),"%d",v);
+        return cJSON_CreateString(buf);
 }
 
-static int temp_v2chararray(const char *str,char *buf,int len)
+static int temp_v2chararray(int id,cJSON *value,char *buf,int len)
 {
-        int value = atoi(str);
-        memset(buf,0,8);
-        buf[1] = value;
-        return 8;
+        return -1;
 }
 
-static int temp_v2cloud(const char *str,char *buf,int len)
+static int temp_v2cloud(int id,cJSON *value,char *buf,int len)
 {
-        int value = atoi(str);
-        buf[0] = value;
+        int v = atoi(value->valuestring);
+        buf[0] = v;
         return 1;
 }
 
-static const char *light_v2string(const char *data,int len,char *strbuf,int size) //本质上是将数组转换为字符串
+static cJSON *light_v2json(int id,const char *data,int len)
 {
-        int16_t value = *(int16_t*)data; //转换成16位数据，并将第一个数据赋值给value
-        le16toh(value); //将16位小端字节序转换为主机字节序
-        snprintf(strbuf,size,"%d",value);
-        return strbuf;
+        int16_t v = *(int16_t*)data;
+        v = le16toh(v);
+        char buf[128] = {0};
+        snprintf(buf,sizeof(buf),"%d",v);
+        return cJSON_CreateString(buf);
 }
 
-static int light_v2chararray(const char *str,char *buf,int len) //本质上是将字符串转为数组
+static int light_v2chararray(int id,cJSON *value,char *buf,int len)
 {
-        int16_t value = atoi(str);
-        memset(buf,0,8);
-        htole16(value);
-        memcpy(buf,&value,sizeof(value));
-        return 8;
+        return -1;
 }
 
-static int light_v2cloud(const char *str,char *buf,int len)
+static int light_v2cloud(int id,cJSON *value,char *buf,int len)
 {
-        uint16_t value = atoi(str);
-        uint16_t v = htobe16(value);
+        uint16_t v = atoi(value->valuestring);
+        v = htobe16(v);
         memcpy(buf,&v,sizeof(v));
 
         return sizeof(v);
 }
 
-static const char* led_v2string(const char *data,int len,char *strbuf,int size)
+static cJSON *led_v2json(int id,const char *data,int len)
 {
         int v = data[0];
         if(v == 1){
-                strcpy(strbuf,"true");
+                return cJSON_CreateString("true");
         }else{
-                strcpy(strbuf,"false");
+                return cJSON_CreateString("false");
         }
-        return strbuf;
 }
 
-static int led_v2chararray(const char* str,char *buf,int len)
+static int led_v2chararray(int id,cJSON *value,char *buf,int len)
 {
-        if(strcasecmp(str,"true") == 0){
-                buf[0] = 1;
-        }else{
-                buf[0] = 3;
+        switch(value->type){
+                case cJSON_False:
+                        buf[0] = 3;
+                        break;
+                case cJSON_True:
+                        buf[0] = 1;
+                        break;
+                case cJSON_String:
+                        if(strcasecmp(value->valuestring,"true"))
+                                buf[0] = 1;
+                        else
+                                buf[0] = 3;
+                        break;
+                default:
+                        break;
         }
         return 8;
 }
 
-static int led_v2cloud(const char *str,char *buf,int len)
+static int led_v2cloud(int id,cJSON *value,char *buf,int len)
 {
-        if(strcasecmp(str,"true") == 0){
-                buf[0] = 1;
-        }else{
-                buf[0] = 3;
+        switch(value->type){
+                case cJSON_False:
+                        buf[0] = 3;
+                        break;
+                case cJSON_True:
+                        buf[0] = 1;
+                        break;
+                case cJSON_String:
+                        if(strcasecmp(value->valuestring,"true"))
+                                buf[0] = 1;
+                        else
+                                buf[0] = 3;
+                        break;
+                default:
+                        break;
         }
         return 1;
 }
-static const char *acceleration_v2string(const char *data,int len,char *strbuf,int size)
+
+static cJSON *acceleration_v2json(int id,const char *data,int len)
 {
          signed short int Ax = data[0]|data[1]<<8;
          signed short int Ay = data[2]|data[3]<<8;
@@ -97,131 +113,129 @@ static const char *acceleration_v2string(const char *data,int len,char *strbuf,i
          signed short int Gx = data[6]|data[7]<<8;
          signed short int Gy = data[8]|data[9]<<8;
          signed short int Gz = data[10]|data[11]<<8;
-         snprintf(strbuf,size,"Ax:%hd,Ay:%d,Az:%hd,Gx:%hd,Gy:%hd,Gz:%hd",Ax,Ay,Az,Gx,Gy,Gz);
-         
-         return strbuf;
+         /*
+         cJSON *value = cJSON_CreateObject();
+         cJSON_AddNumberToObject(value,"Ax",Ax);
+         cJSON_AddNumberToObject(value,"Ay",Ay);
+         cJSON_AddNumberToObject(value,"Az",Az);
+         cJSON_AddNumberToObject(value,"Gx",Gx);
+         cJSON_AddNumberToObject(value,"Gy",Gy);
+         cJSON_AddNumberToObject(value,"Gz",Gz);
+         */
+        char buf[128] = {0};
+        snprintf(buf,sizeof(buf),"Ax:%d,Ay:%d,Az:%d,Gx:%d,Gy:%d,Gz:%d",Ax,Ay,Az,Gx,Gy,Gz);
+
+         return cJSON_CreateString(buf);
 }
 
-static int acceleration_v2chararray(const char* str,char *buf,int len)
+static int acceleration_v2chararray(int id,cJSON *value,char *buf,int len)
 {
-        return 0;       
+        return -1;       
 }
 
-static int acceleration_v2cloud(const char *str,char *buf,int len)
+static int acceleration_v2cloud(int id,cJSON *value,char *buf,int len)
 {
         return 0;
 }
 
-static const char * magnetic_v2string(const char *data,int len,char *strbuf,int size)
+
+static cJSON *magnetic_v2json(int id,const char *data,int len)
 {
         signed short int X = data[0]|data[1]<<8;
         signed short int Y = data[2]|data[3]<<8;
         signed short int Z = data[4]|data[5]<<8;
-        snprintf(strbuf,size,"X:%hd,Y:%hd,Z:%hd",X,Y,Z);
-        return strbuf;
+        /*
+        cJSON *value = cJSON_CreateObject();
+        cJSON_AddNumberToObject(value,"X",X);
+        cJSON_AddNumberToObject(value,"Y",Y);
+        cJSON_AddNumberToObject(value,"Z",Z);
+        */
+        char buf[128] = {0};
+        snprintf(buf,sizeof(buf),"X:%d,Y:%d,Z:%d",X,Y,Z);
+
+        return cJSON_CreateString(buf);
 }
 
-static int magnetic_v2chararray(const char* str,char *buf,int len)
+static int magnetic_v2chararray(int id,cJSON *value,char *buf,int len)
 {
-        const char *start;
-        char *end;
-        char **pend = &end;
-        if(str){
-                start = strchr(str,':') + 1;
-                int16_t x = strtol(start,pend,10);
-                start = strchr(end,':') + 1;
-                int16_t y = strtol(start,pend,10);
-                start = strchr(end,':') + 1;
-                int16_t z = strtol(start,pend,10);
-                
-                htole16(x);htole16(y);htole16(z);
-
-                memcpy(buf,&x,2);
-                memcpy(buf+2,&y,2);
-                memcpy(buf+4,&z,2);
-        }
-        return 8;
+        return -1;
 }
 
-static int magnetic_v2cloud(const char *str,char *buf,int len)
+static int magnetic_v2cloud(int id,cJSON *value,char *buf,int len)
 {
-        return 0;
+        return -1;
 }
 
-static const char *rfid_v2string(const char *data,int len,char *strbuf,int size)
+cJSON *rfid_v2json(int id,const char *data,int len)
 {
-        int32_t value = *(int32_t*)data; //转换成32位数据，并将第一个数据赋值给value
-        le32toh(value); //将32位小端字节序转换为主机字节序
-        snprintf(strbuf,size,"%u",value);
-        return strbuf;
+        int32_t value = *(int32_t*)data; 
+        value = le32toh(value); 
+        return cJSON_CreateNumber(value);
 }
 
-static int rfid_v2chararray(const char *str,char *buf,int len)
+static int rfid_v2chararray(int id,cJSON *value,char *buf,int len)
 {
-        return 0;
+        return -1;
 }
-static int rfid_v2cloud(const char *str,char *buf,int len)
+static int rfid_v2cloud(int id,cJSON *value,char *buf,int len)
 {
-        int32_t value = atoi(str);
-        uint32_t v = htole32(value);
+        int32_t v = atoi(value->valuestring);
+        v = htole32(v);
         memcpy(buf,&v,sizeof(v));
         return sizeof(v);
 }
-static const char *temp_and_humi_v2string(const char *data,int len,char *strbuf,int size)
+static cJSON *temp_and_humi_v2json(int id,const char *data,int len)
 {
         int humi = (unsigned char)data[0];
         int temp = (unsigned char)data[1];
+        cJSON *value = cJSON_CreateObject();
+        cJSON_AddNumberToObject(value,"humidity",humi);
+        cJSON_AddNumberToObject(value,"temperature",temp);
 
-        snprintf(strbuf,size,"%d,%d",humi,temp);
 
-        return strbuf;
+        return value;
 }
 
-static int temp_and_humi_v2chararray(const char *str,char *buf,int len)
+static int temp_and_humi_v2chararray(int id,cJSON *value,char *buf,int len)
 {
-        return 0;
+        return -1;
 }
 
-static int temp_and_humi_v2cloud(const char *str,char *buf,int len)
+static int temp_and_humi_v2cloud(int id,cJSON *value,char *buf,int len)
 {
-        return 0;
+        return -1;
 }
 
-static const char *closet_v2string(const char *data,int len,char *strbuf,int size)
+static cJSON *closet_v2json(int id,const char *data,int len)
 {
         int v = data[0];
         switch(v){
                 case 1:
-                        snprintf(strbuf,size,"left");
-                        break;
+                        return cJSON_CreateString("left");
                 case 2:
-                        snprintf(strbuf,size,"right");
-                        break;
+                        return cJSON_CreateString("right");
                 case 3:
-                        snprintf(strbuf,size,"stop");
-                        break;
+                        return cJSON_CreateString("stop");
                 default:
-                        snprintf(strbuf,size,"closet unknown");
-                        break;
+                        return cJSON_CreateString("closet unknown");
         }
-        return strbuf;
 }
-static int closet_v2charray(const char *str,char *buf,int len)
+static int closet_v2chararray(int id,cJSON *value,char *buf,int len)
 {
-        if(strcasecmp(str,"left") == 0){
+        if(strcasecmp(value->valuestring,"left") == 0){
                 buf[0] = 1;
-        }else if(strcasecmp(str,"right") == 0){
+        }else if(strcasecmp(value->valuestring,"right") == 0){
                 buf[0] = 2;
         }else{
                 buf[0] = 3;
         }
         return 8;
 }
-static int closet_v2cloud(const char *str,char *buf,int len)
+static int closet_v2cloud(int id,cJSON *value,char *buf,int len)
 {
-        if(strcasecmp(str,"left") == 0){
+        if(strcasecmp(value->valuestring,"left") == 0){
                 buf[0] = 1;
-        }else if(strcasecmp(str,"right") == 0){
+        }else if(strcasecmp(value->valuestring,"right") == 0){
                 buf[0] = 2;
         }else{
                 buf[0] = 3;
@@ -229,7 +243,7 @@ static int closet_v2cloud(const char *str,char *buf,int len)
         return 1;
 }
 
-#if 1
+#if 0
 static const char *xueya_v2string(const char *data,int len,char *strbuf,int size)
 {
         if(data[0] == 0x5B){
@@ -524,40 +538,52 @@ static int lcd_v2chararray(const char *str,char *buf,int len)
 }
 #endif // 食品溯源}
 
+
+#if 0   //交通沙盘{
+static const char *traffic_light_v2string(const char *data,int len,char *strbuf,int size)
+{
+        int  sn = data[0];
+        int  ew = data[1];
+        snprintf(strbuf,size,"%d,%d",sn,ew);
+        return strbuf;
+}
+
+
+
+#endif //交通沙盘}
+
 struct devices
 {
         int type; 
-        const char *(*v2string)(const char *data,int len,char *strbuf,int size);
-        int (*v2chararray)(const char *str,char *buf,int len);
-        int (*v2cloud)(const char *str,char *buf,int len);
+        cJSON* (*v2json)(int id,const char *data,int len);
+        int (*v2chararray)(int id,cJSON *value,char *buf,int size);
+        int (*v2cloud)(int id,cJSON *value,char *buf,int len);
 };
 
 
 static struct  devices devices[] = {
-        {0x10,temp_v2string,temp_v2chararray,temp_v2cloud}, //温度
-        {0x11,temp_v2string,temp_v2chararray,temp_v2cloud}, //湿度
-        {0x12,light_v2string,light_v2chararray,light_v2cloud}, //光照
-        {0x16,light_v2string,light_v2chararray,light_v2cloud}, //气压
-        {0x13,light_v2string,light_v2chararray,light_v2cloud}, //可燃气体
-        {0x1d,light_v2string,light_v2chararray,light_v2cloud}, //烟雾
-        {0x1a,light_v2string,light_v2chararray,light_v2cloud}, //二氧化碳
-        {0x18,led_v2string,led_v2chararray,led_v2cloud},     //继电器
-        {0x14,led_v2string,led_v2chararray,led_v2cloud},     //人体红外
-        {0x22,led_v2string,led_v2chararray,led_v2cloud},     //红外反射
-        {0x23,led_v2string,led_v2chararray,led_v2cloud},     //触摸按键
-        {0x24,led_v2string,led_v2chararray,led_v2cloud},     //声音
-        {0x25,led_v2string,led_v2chararray,led_v2cloud},     //雨滴
-        {0x26,led_v2string,led_v2chararray,led_v2cloud},     //火焰
-        {0x27,led_v2string,led_v2chararray,led_v2cloud},     //震动
-        {0x29,rfid_v2string,rfid_v2chararray,rfid_v2cloud},     //震动
-        {0x15,acceleration_v2string,acceleration_v2chararray,acceleration_v2cloud}, //加速度
-        {0x20,magnetic_v2string,magnetic_v2chararray,magnetic_v2cloud},  //磁场
-        {0x29,rfid_v2string,rfid_v2chararray,rfid_v2cloud},
-        {0x41,temp_and_humi_v2string,temp_and_humi_v2chararray,temp_and_humi_v2cloud},
-//        {0x42,lcd_v2string,lcd_v2chararray},
-	{0x43,light_v2string,light_v2chararray,light_v2cloud}, //ph
-        {0x2A,closet_v2string,closet_v2charray,closet_v2cloud},
-        {0x44,tiwen_v2string,tiwen_v2charray,tiwen_v2cloud},
+        {0x10,temp_v2json,temp_v2chararray,temp_v2cloud}, //温度
+        {0x11,temp_v2json,temp_v2chararray,temp_v2cloud}, //湿度
+        {0x12,light_v2json,light_v2chararray,light_v2cloud}, //光照
+        {0x16,light_v2json,light_v2chararray,light_v2cloud}, //气压
+        {0x13,light_v2json,light_v2chararray,light_v2cloud}, //可燃气体
+        {0x1d,light_v2json,light_v2chararray,light_v2cloud}, //烟雾
+        {0x1a,light_v2json,light_v2chararray,light_v2cloud}, //二氧化碳
+        {0x18,led_v2json,led_v2chararray,led_v2cloud},     //继电器
+        {0x14,led_v2json,led_v2chararray,led_v2cloud},     //人体红外
+        {0x22,led_v2json,led_v2chararray,led_v2cloud},     //红外反射
+        {0x23,led_v2json,led_v2chararray,led_v2cloud},     //触摸按键
+        {0x24,led_v2json,led_v2chararray,led_v2cloud},     //声音
+        {0x25,led_v2json,led_v2chararray,led_v2cloud},     //雨滴
+        {0x26,led_v2json,led_v2chararray,led_v2cloud},     //火焰
+        {0x27,led_v2json,led_v2chararray,led_v2cloud},     //震动
+        {0x29,rfid_v2json,rfid_v2chararray,rfid_v2cloud},     //震动
+        {0x15,acceleration_v2json,acceleration_v2chararray,acceleration_v2cloud}, //加速度
+        {0x20,magnetic_v2json,magnetic_v2chararray,magnetic_v2cloud},  //磁场
+        {0x29,rfid_v2json,rfid_v2chararray,rfid_v2cloud},
+        {0x41,temp_and_humi_v2json,temp_and_humi_v2chararray,temp_and_humi_v2cloud},
+	{0x43,light_v2json,light_v2chararray,light_v2cloud}, //ph
+        {0x2A,closet_v2json,closet_v2chararray,closet_v2cloud},
         
 };
 
@@ -571,27 +597,29 @@ static struct devices *find_device(int device_type)
         return NULL;
 }
 
-const char *device_v2string(int id,int type,const char *data,int len,char *strbuf,int size)
+cJSON* device_v2json(int id,int type,const char *data,int len)
 {
         struct devices *d = find_device(type);
-        if(d == NULL)
-                return "unknown";
-        return d->v2string(data,len,strbuf,size);
+        if(d == NULL){
+                return NULL;
+        }
+
+        return d->v2json(id,data,len);
 }
 
-int device_v2chararray(int id,int type,const char *str,char *buf,int size)
+int device_v2chararray(int id,int type,cJSON *value,char *buf,int size)
 {
         struct devices *d = find_device(type);
 
         if(d == NULL)
                 return -1;
 
-        return d->v2chararray(str,buf,size);
+        return d->v2chararray(id,value,buf,size);
 }
-int device_v2cloud(int id,int type,const char *str,char *buf,int size)
+int device_v2cloud(int id,int type,cJSON *value,char *buf,int size)
 {
         struct devices *d = find_device(type);
         if(d == NULL)
                 return -1;
-        return d->v2cloud(str,buf,size);
+        return d->v2cloud(id,value,buf,size);
 }

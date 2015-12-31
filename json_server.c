@@ -35,8 +35,8 @@ int json_server_broadcast(struct sensor_data *sd)
         cJSON_AddNumberToObject(root,"device_id",sd->id);
         cJSON_AddNumberToObject(root,"device_type",sd->type);
         cJSON_AddStringToObject(root,"transfer_type",sd->transfer_type);
-        cJSON_AddStringToObject(root,"device_value",sd->value);
         cJSON_AddStringToObject(root,"timestamp",sd->asctime);
+        cJSON_AddItemReferenceToObject(root,"device_value",sd->value);
         char *json = cJSON_PrintUnformatted(root);
         struct gw_json_client *c;
         
@@ -190,7 +190,7 @@ static int cmd_query(struct gw_json_client *c,const char *cmd,cJSON *args,cJSON 
         cJSON* root = cJSON_CreateObject();
         cJSON_AddNumberToObject(root,"device_id",sd->id);
         cJSON_AddStringToObject(root,"transfer_type",sd->transfer_type);
-        cJSON_AddStringToObject(root,"device_value",sd->value);
+        cJSON_AddItemToObject(root,"device_value",sd->value);
         cJSON_AddStringToObject(root,"timestamp",sd->asctime);
         cJSON_AddItemToObject(reply,"ret_data",root);
         cJSON_AddStringToObject(reply,"err_msg","success");
@@ -251,19 +251,20 @@ static int cmd_set_sensor(struct gw_json_client *c,const char *cmd,cJSON *args,c
         if(transfer_type == NULL)
                 transfer_type = "zigbee";
 	
+        printf("transfer_type %s\n",transfer_type);
         struct gwseriport *s = find_transfer_media(transfer_type);
        	if(s == NULL){
                 cJSON_AddStringToObject(reply,"err_msg","error ttypath");
                 return -1;
         }
         char slip[256] = {0};  
-        struct sensor_data *sd1 = sensor_data_create(device_id,device_type,dv_value->valuestring,transfer_type);
+        struct sensor_data *sd1 = sensor_data_create(device_id,device_type,dv_value,transfer_type);
 
 
         int r = sensor_data_to_slip(sd1,slip,sizeof(slip));
 
         if(r < 0){
-                cJSON_AddStringToObject(reply,"err_msg","unknown error");
+                cJSON_AddStringToObject(reply,"err_msg","unrecoginized sensor");
                 return -1;
         }
         cJSON_AddStringToObject(reply,"err_msg","success");

@@ -63,6 +63,7 @@ int sdlist_check_push(list *sdl,struct sensor_data *sd)
                 sdl = listAddNodeTail(sdl,sdata);
                 return sdl==NULL? -1:1;
         }
+        sensor_data_release(sdn->value);
         listNodeValue(sdn) = sdata;
         return 0;
 }

@@ -46,7 +46,6 @@ int gw_cloud_broadcast(struct sensor_data *sd)
         if(r < 0){
                 return -1;
         }
-
         listIter *iter = listGetIterator(server.cloud_clients,AL_START_HEAD);
 
         while( (node=listNext(iter)) != NULL ){
@@ -137,23 +136,28 @@ static void read_from_platform(aeEventLoop *el,int fd,void *client_data,int mask
                 struct sensor_data *sd1;
                 int r;
                 char slip[256] = {0};
-
+                
+                cJSON *tmp;
                 switch(type){    //type
                         case REQ_SWITCH_ON:
-                                sd1 = sensor_data_create(sd->id,sd->type,"true",transfer_type);
+                                tmp = cJSON_CreateTrue();
+                                sd1 = sensor_data_create(sd->id,sd->type,tmp,transfer_type);
                                 r = sensor_data_to_slip(sd1,slip,sizeof(slip));
                                 if(r > 0){
                                         write_seriport(s,slip,r);
                                 }
                                 sensor_data_release(sd1);
+                                cJSON_Delete(tmp);
                                 break;
                         case REQ_SWITCH_OFF:
-                                sd1 = sensor_data_create(sd->id,sd->type,"false",transfer_type);
+                                tmp = cJSON_CreateFalse();
+                                sd1 = sensor_data_create(sd->id,sd->type,tmp,transfer_type);
                                 r = sensor_data_to_slip(sd1,slip,sizeof(slip));
                                 if(r > 0){
                                         write_seriport(s,slip,r);
                                 }
                                 sensor_data_release(sd1);
+                                cJSON_Delete(tmp);
                                 break;
                         default:
                                 break;

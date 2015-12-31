@@ -106,7 +106,8 @@ static int slip_decode(const char *src,int len_src,char *dest)
 int sensor_data_to_slip_208(struct sensor_data *sd,char *slip,int size)
 {
         char buf[100] ={0};
-        int r = device_v2chararray(sd->id,sd->type,sd->value,buf,sizeof(buf));
+//        int r = device_v2chararray(sd->id,sd->type,sd->value,buf,sizeof(buf));
+        int r = -1;
         if(r < 0){
                 printf("device_v2chararray \n");
                 return -1;
