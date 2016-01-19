@@ -72,7 +72,7 @@ static int led_v2chararray(int id,cJSON *value,char *buf,int len)
                         buf[0] = 1;
                         break;
                 case cJSON_String:
-                        if(strcasecmp(value->valuestring,"true"))
+                        if(strcasecmp(value->valuestring,"true") == 0)
                                 buf[0] = 1;
                         else
                                 buf[0] = 3;
