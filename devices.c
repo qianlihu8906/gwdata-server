@@ -72,7 +72,7 @@ static int led_v2chararray(int id,cJSON *value,char *buf,int len)
                         buf[0] = 1;
                         break;
                 case cJSON_String:
-                        if(strcasecmp(value->valuestring,"true"))
+                        if(strcasecmp(value->valuestring,"true") == 0)
                                 buf[0] = 1;
                         else
                                 buf[0] = 3;
@@ -241,6 +241,28 @@ static int closet_v2cloud(int id,cJSON *value,char *buf,int len)
                 buf[0] = 3;
         }
         return 1;
+}
+
+static cJSON *heart_v2json(int id,const char *data,int len)
+{
+        int status = data[0];
+        int freq = data[1];
+
+        if(status == 2)
+                return cJSON_CreateString("testing");
+        char buf[100] = {0};
+        snprintf(buf,sizeof(buf),"%d",freq);
+        return cJSON_CreateString(buf);
+}
+
+static int heart_v2chararay(int id,cJSON *value,char *buf,int len)
+{
+        return -1;
+}
+
+static int heart_v2cloud(int id,cJSON *value,char *buf,int len)
+{
+        return -1;
 }
 
 #if 0
@@ -584,6 +606,7 @@ static struct  devices devices[] = {
         {0x41,temp_and_humi_v2json,temp_and_humi_v2chararray,temp_and_humi_v2cloud},
 	{0x43,light_v2json,light_v2chararray,light_v2cloud}, //ph
         {0x2A,closet_v2json,closet_v2chararray,closet_v2cloud},
+        {0x3A,heart_v2json,heart_v2chararay,heart_v2cloud},
         
 };
 
