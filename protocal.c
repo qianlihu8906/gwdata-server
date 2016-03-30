@@ -141,9 +141,11 @@ int sensor_data_to_slip(struct sensor_data *sd,char *slip,int size)
 {
         char buf[100] ={0};
         int r = device_v2chararray(sd->id,sd->type,sd->value,buf,sizeof(buf));
-        if(r < 0)
+        if(r < 0){
+                printf("device_v2chararray error\n");
+                sensor_data_debug(sd);
                 return -1;
-
+        }
         int len = 3+r; 			// dvid  dvtype cmd_type
 
         if(2*len > size)                

@@ -73,6 +73,7 @@ static void seriportHandler(aeEventLoop *el,int fd,void *privdata,int mask)
         int r;
         struct sensor_data *sd;
         while((r=buffer_read_slip(s->recvbuf,buf,sizeof(buf))) >= 0){
+                hexprint("read seriport",buf,r);
                 sd = slip_to_sensor_data(buf,r);
                 if(sd != NULL){
                         snprintf(s->transfer_media,sizeof(s->transfer_media),"%s",sd->transfer_type);

@@ -265,27 +265,190 @@ static int heart_v2cloud(int id,cJSON *value,char *buf,int len)
         return -1;
 }
 
-#if 0
-static const char *xueya_v2string(const char *data,int len,char *strbuf,int size)
+static cJSON *tiwen_v2json(int id,const char *data,int len)
 {
-        if(data[0] == 0x5B){
-                strcpy(strbuf,"sleep");
+        char buf[256] = {0};
+        if(data[0] == 0xA0){
+                int v = data[1]*256 + data[2];
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddNumberToObject(value,"TW",v);
+                return value;
+        }else if(data[0] == 0xA1){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddStringToObject(value,"status","stop");
+                return value;
+        }else if(data[0] == 0xA2){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddNumberToObject(value,"SN0",data[1]);
+                cJSON_AddNumberToObject(value,"SN1",data[2]);
+                cJSON_AddNumberToObject(value,"SN2",data[3]);
+                cJSON_AddNumberToObject(value,"SN3",data[4]);
+                return value;
+        }else if(data[0] == 0xA3){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddNumberToObject(value,"T1",data[1]);
+                cJSON_AddNumberToObject(value,"T2",data[2]);
+                cJSON_AddNumberToObject(value,"T3",data[3]);
+                cJSON_AddNumberToObject(value,"T4",data[4]);
+        }else if(data[0] == 0xCA){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddStringToObject(value,"status","adjust up success");
+                return value;
+        }else if(data[0] == 0xCD){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddStringToObject(value,"status","adjust down success");
+                return value;
         }else if(data[0] == 0x5A){
-                strcpy(strbuf,"wakeup");
-        }else if(data[0] == 0x54){
-                snprintf(strbuf,size,"QYH:%02x,QYL:%02x",data[1],data[2]);
-        }else if(data[0] == 0x55){
-                snprintf(strbuf,size,"SSYH:%02x,SSYL:%02x,SZYH:%02x,SZYL:%02x,XL:%02x",data[1],data[2],data[3],data[4],data[5]);
-        }else if(data[0] == 0x56){
-                snprintf(strbuf,size,"X:%02x",data[1]);
-        }else{
-                strcpy(strbuf,"error");
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddStringToObject(value,"status","online");
+                return value;
         }
-        return strbuf;
+        cJSON *value = cJSON_CreateObject();
+        cJSON_AddStringToObject(value,"status","error");
+        return value;
 }
 
-static int xueya_v2charray(const char *str,char *buf,int len)
+static int tiwen_v2chararray(int id,cJSON *value,char *buf,int len)
 {
+        const char *str = value->valuestring;
+        if(strcasecmp(str,"start") == 0){
+                buf[0] = 0xA0;
+                return 1;
+        }else if(strcasecmp(str,"stop") == 0){
+                buf[0] = 0xA1;
+                return 1;
+        }else if(strcasecmp(str,"read_id") == 0){
+                buf[0] = 0xA2;
+                return 1;
+        }else if(strcasecmp(str,"read_date") == 0){
+                buf[0] = 0xA3;
+                return 1;
+        }else if(strstr(str,"adjust_up") != NULL){
+                char *start = strchr(str,':') + 1;
+                int x = atoi(start);
+                buf[0] = 0xA4;
+                buf[1] = x;
+                return 2;
+        }else if(strstr(str,"adjust_down") != NULL){
+                char *start = strchr(str,':') + 1;
+                int x = atoi(start);
+                buf[0] = 0xA4;
+                buf[1] = x;
+                return 2;
+        }else{
+                buf[0] = 0xAA;
+                return 1;
+        }
+        
+
+}
+
+static int tiwen_v2cloud(int id,cJSON *value,char *buf,int len)
+{
+        buf[0] = 0;
+        return 1;
+}
+
+static cJSON *xueyang_v2json(int id,char *data,int size)
+{
+        if(data[0] == 0xA0){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddNumberToObject(value,"MB",data[1]);
+                cJSON_AddNumberToObject(value,"XY",data[2]);
+                cJSON_AddNumberToObject(value,"XL",data[3]);
+                return value;
+        }else if(data[0] == 0xA1){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddStringToObject(value,"status","stop");
+                return value;
+        }else if(data[0] == 0xA2){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddNumberToObject(value,"SN0",data[1]);
+                cJSON_AddNumberToObject(value,"SN1",data[2]);
+                cJSON_AddNumberToObject(value,"SN2",data[3]);
+                cJSON_AddNumberToObject(value,"SN3",data[4]);
+                return value;
+        }else if(data[0] == 0xA3){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddNumberToObject(value,"T1",data[1]);
+                cJSON_AddNumberToObject(value,"T2",data[2]);
+                cJSON_AddNumberToObject(value,"T3",data[3]);
+                cJSON_AddNumberToObject(value,"T4",data[4]);
+                return value;
+        }else if(data[0] == 0x5A){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddStringToObject(value,"status","online");
+                return value;
+        }
+        cJSON *value = cJSON_CreateObject();
+        cJSON_AddStringToObject(value,"status","error");
+        return value;
+}
+
+static int xueyang_v2chararray(int id,cJSON *value,char *buf,int len)
+{
+        const char *str = value->valuestring;
+        if(strcasecmp(str,"start") == 0){
+                buf[0] = 0xA0;
+                return 1;
+        }else if(strcasecmp(str,"stop") == 0){
+                buf[0] = 0xA1;
+                return 1;
+        }else if(strcasecmp(str,"read_id") == 0){
+                buf[0] = 0xA2;
+                return 1;
+        }else if(strcasecmp(str,"read_date") == 0){
+                buf[0] = 0xA3;
+                return 1;
+        }else{
+                buf[0] = 0xAA;
+                return 1;
+        }
+        
+}
+
+static int xueyang_v2cloud(int id,cJSON *value,char *buf,int len)
+{
+        buf[0] = 0;
+        return 1;
+}
+
+static cJSON *xueya_v2json(int id,char *data,int len)
+{
+        if(data[0] == 0x5B){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddStringToObject(value,"status","stop");
+                return value;
+        }else if(data[0] == 0x5A){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddStringToObject(value,"status","online");
+                return value;
+        }else if(data[0] == 0x54){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddNumberToObject(value,"QYH",data[1]);
+                cJSON_AddNumberToObject(value,"QYL",data[2]);
+                return value;
+        }else if(data[0] == 0x55){
+                cJSON *value = cJSON_CreateObject();
+                int shuzhang = data[3]*256 + data[4];
+                int shousuo  = (data[1]&0x7f)*256 + data[2];
+                cJSON_AddNumberToObject(value,"shuzhang",shuzhang);
+                cJSON_AddNumberToObject(value,"shousuo",shousuo);
+                cJSON_AddNumberToObject(value,"XL",data[5]);
+                return value;
+        }else if(data[0] == 0x56){
+                cJSON *value = cJSON_CreateObject();
+                cJSON_AddNumberToObject(value,"X",data[1]);
+                return value;
+        }
+        cJSON *value = cJSON_CreateObject();
+        cJSON_AddStringToObject(value,"status","error");
+        return value;
+}
+
+static int xueya_v2chararray(int id,cJSON *value,char *buf,int len)
+{
+        const char *str = value->valuestring;
         if(strcasecmp(str,"sleep") == 0){
                 buf[0] = 0xAB;
                 return 1;
@@ -304,11 +467,13 @@ static int xueya_v2charray(const char *str,char *buf,int len)
         }
 }
 
-static int xueya_v2cloud(const char *str,char *buf,int len)
+static int xueya_v2cloud(int id,cJSON *value,char *buf,int len)
 {
         buf[0] = 0;
         return 1;
 }
+
+#if 0
 
 static const char *maibo_v2string(const char *data,int len,char *strbuf,int size)
 {
@@ -408,109 +573,7 @@ static int xindian_v2cloud(const char *str,char *buf,int len)
         return 1;
 }
 
-static const char *tiwen_v2string(const char *data,int len,char *strbuf,int size)
-{
-        if(data[0] == 0xA0){
-                snprintf(strbuf,size,"TWH:%02x,TWL:%02x",data[1],data[2]);
-        }else if(data[0] == 0xA1){
-                snprintf(strbuf,size,"stop");
-        }else if(data[0] == 0xA2){
-                snprintf(strbuf,size,"SN0:%02x,SN1:%02x,SN2:%02x,SN3:%02x",data[1],data[2],data[3],data[4]);
-        }else if(data[0] == 0xA3){
-                snprintf(strbuf,size,"T1:%02x,T2:%02x,T3:%02x,T4:%02x",data[1],data[2],data[3],data[4]);
-        }else if(data[0] == 0xCA){
-                snprintf(strbuf,size,"adjust_up success");
-        }else if(data[0] == 0xCD){
-                snprintf(strbuf,size,"adjust_down success");
-        }else{
-                snprintf(strbuf,size,"error");
-        }
-        return strbuf;
 
-}
-
-static int tiwen_v2charray(const char *str,char *buf,int len)
-{
-        if(strcasecmp(str,"start") == 0){
-                buf[0] = 0xA0;
-                return 1;
-        }else if(strcasecmp(str,"stop") == 0){
-                buf[0] = 0xA1;
-                return 1;
-        }else if(strcasecmp(str,"read_id") == 0){
-                buf[0] = 0xA2;
-                return 1;
-        }else if(strcasecmp(str,"read_date") == 0){
-                buf[0] = 0xA3;
-                return 1;
-        }else if(strstr(str,"adjust_up") != NULL){
-                char *start = strchr(str,':') + 1;
-                int x = atoi(start);
-                buf[0] = 0xA4;
-                buf[1] = x;
-                return 2;
-        }else if(strstr(str,"adjust_down") != NULL){
-                char *start = strchr(str,':') + 1;
-                int x = atoi(start);
-                buf[0] = 0xA4;
-                buf[1] = x;
-                return 2;
-        }else{
-                buf[0] = 0xAA;
-                return 1;
-        }
-        
-
-}
-
-static int tiwen_v2cloud(const char *str,char *buf,int len)
-{
-        buf[0] = 0;
-        return 1;
-}
-
-static const char *xueyang_v2string(const char *data,int len,char *strbuf,int size)
-{
-        if(data[0] == 0xA0){
-                snprintf(strbuf,size,"MB:%02x,XY:%02x,XL:%02x",data[1],data[2],data[3]);
-        }else if(data[0] == 0xA1){
-                snprintf(strbuf,size,"stop");
-        }else if(data[0] == 0xA2){
-                snprintf(strbuf,size,"SN0:%02x,SN1:%02x,SN2:%02x,SN3:%02x",data[1],data[2],data[3],data[4]);
-        }else if(data[0] == 0xA3){
-                snprintf(strbuf,size,"T1:%02x,T2:%02x,T3:%02x,T4:%02x",data[1],data[2],data[3],data[4]);
-        }else{
-                snprintf(strbuf,size,"error");
-        }
-        return strbuf;
-}
-
-static int xueyang_v2chararray(const char *str,char *buf,int len)
-{
-        if(strcasecmp(str,"start") == 0){
-                buf[0] = 0xA0;
-                return 1;
-        }else if(strcasecmp(str,"stop") == 0){
-                buf[0] = 0xA1;
-                return 1;
-        }else if(strcasecmp(str,"read_id") == 0){
-                buf[0] = 0xA2;
-                return 1;
-        }else if(strcasecmp(str,"read_date") == 0){
-                buf[0] = 0xA3;
-                return 1;
-        }else{
-                buf[0] = 0xAA;
-                return 1;
-        }
-        
-}
-
-static int xueyang_v2cloud(const char *str,char *buf,int len)
-{
-        buf[0] = 0;
-        return 1;
-}
 #endif
 
 #if 0  //{Ê³Æ·ËÝÔ´
@@ -607,6 +670,9 @@ static struct  devices devices[] = {
 	{0x43,light_v2json,light_v2chararray,light_v2cloud}, //ph
         {0x2A,closet_v2json,closet_v2chararray,closet_v2cloud},
         {0x3A,heart_v2json,heart_v2chararay,heart_v2cloud},
+        {0x44,tiwen_v2json,tiwen_v2chararray,tiwen_v2cloud},
+        {0x42,xueyang_v2json,xueyang_v2chararray,xueyang_v2cloud},
+        {0x45,xueya_v2json,xueya_v2chararray,xueya_v2cloud},
         
 };
 

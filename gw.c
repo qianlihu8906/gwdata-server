@@ -37,12 +37,13 @@ void init_server()
 
         aeCreateFileEvent(server.el,server.json_fd,AE_READABLE,json_server_acceptHandler,NULL);
         aeCreateFileEvent(server.el,server.p208_fd,AE_READABLE,p208_server_acceptHandler,NULL);
-        
+#if 0        
         gwseriport_create("/dev/ttyUSB0",115200);
         gwseriport_create("/dev/ttyUSB1",115200);
         gwseriport_create("/dev/ttyUSB2",115200);
         gwseriport_create("/dev/ttyUSB3",115200);
-
+#endif
+        gwseriport_create("/dev/ttyAMA5",115200);
         server.global_sensor_data = sdlist_create();
 
         uuid_dvid_init();
