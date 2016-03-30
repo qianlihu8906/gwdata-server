@@ -11,6 +11,7 @@
 #include "uuid_dvid.h"
 #include "cJSON.h"
 
+
 struct sensor_data *sensor_data_create(int id,int type,cJSON *value,const char *transfer_type)
 {
         struct sensor_data *sd = malloc(sizeof(*sd));
@@ -30,6 +31,16 @@ struct sensor_data *sensor_data_create(int id,int type,cJSON *value,const char *
         return sd;
 }
 
+static struct sensor_data *sensor_data_create_with_208(int id,int type,cJSON *value,const char *transfer_type,const char *data,int len)
+{
+        struct sensor_data *sd = sensor_data_create(id,type,value,transfer_type);
+        if(len > 8)                   //208 need it,we will forget it
+                len = 8;
+        memset(sd->data,0,8);
+        memcpy(sd->data,data,len);
+        return sd;
+}
+
 void sensor_data_release(struct sensor_data *sd)
 {
         cJSON_Delete(sd->value);
@@ -44,12 +55,12 @@ int sensor_data_match_id(struct sensor_data *sd1,int id)
 
 struct sensor_data *sensor_data_dup(struct sensor_data *sd)
 {
-        return sensor_data_create(sd->id,sd->type,sd->value,sd->transfer_type);
+        return sensor_data_create_with_208(sd->id,sd->type,sd->value,sd->transfer_type,sd->data,8);
 }
 
 void sensor_data_debug(struct sensor_data *sd)
 {
-        printf("id=%d\t",sd->id);
+        printf("device_id=%d\t,device_type=%d\n",sd->id,sd->type);
         char *json = cJSON_PrintUnformatted(sd->value);
         printf("value(p)=%s(%p)\t",json,sd->value);
         free(json);
@@ -98,7 +109,7 @@ static int slip_encode(const char *src,int len_src,char *dest)
         return j;
 }
 
-static int slip_decode(const char *src,int len_src,char *dest)
+static int slip_decode(const char *src,int len_src,char *dest) //返回值不包含校验和
 {
  
         int i,j;
@@ -189,24 +200,25 @@ struct sensor_data *slip_to_sensor_data(const char *slip,int len)
 {
         char data[len];
         int r = slip_decode(slip,len,data);
-        if(r < 4){                            // dvid,type,transfer_type and data
+        hexprint("decode",data,r);
+        if(r < 3){                            // dvid,type,transfer_type
                 return NULL;
         }
         int dvid = (unsigned char)data[0];
         int dvtype =(unsigned char)data[1];
-
+        int data_len = r - 3;
         int transfer_type = (data[2]&0xf0) >> 4;
         if(transfer_type < 0||transfer_type >= (ARRAY_SIZE(transfer_types))){
                 return NULL;
         }
         const char *transfer_type_str = transfer_types[transfer_type];
 
-        cJSON *value = device_v2json(dvid,dvtype,data+3,8);
+        cJSON *value = device_v2json(dvid,dvtype,data+3,data_len);
         if(value == NULL){
                 return NULL;
         }
 
-        struct sensor_data* sd = sensor_data_create(dvid,dvtype,value,transfer_type_str);
+        struct sensor_data* sd = sensor_data_create_with_208(dvid,dvtype,value,transfer_type_str,data+3,data_len);
         cJSON_Delete(value);
 
         return sd;

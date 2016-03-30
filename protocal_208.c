@@ -8,8 +8,10 @@
 #include "devices.h"
 #include "protocal.h"
 #include "protocal_208.h"
+#include "sdlist.h"
 #include "debug.h"
 #include "cJSON.h"
+#include "gw.h"
 
 static char checksum(const char *data,int len)
 {
@@ -106,15 +108,14 @@ static int slip_decode(const char *src,int len_src,char *dest)
 int sensor_data_to_slip_208(struct sensor_data *sd,char *slip,int size)
 {
         char buf[100] ={0};
-//        int r = device_v2chararray(sd->id,sd->type,sd->value,buf,sizeof(buf));
-        int r = -1;
+
+        sensor_data_debug(sd);
+        int r = device_v2chararray(sd->id,sd->type,sd->value,buf,sizeof(buf));
         if(r < 0){
-                printf("device_v2chararray \n");
+                printf("device_v2chararray\n");
                 return -1;
         }
-
         int len = 24; 			// magic number
-
         if(2*len > size){
                 printf("error..........\n");
                 return -1;
@@ -181,4 +182,15 @@ int slip_to_protocal208_cmd(struct protocal208_cmd *cmd,const char *slip,int len
 void protocal208_cmd_debug(struct protocal208_cmd *cmd)
 {
         printf("cmd:%d\tdevice_id:%d\n",cmd->cmd,cmd->device_id);
+}
+
+int protocal208_sd2data(int dvid,char *buf,int len)
+{
+        struct sensor_data *sd = sdlist_find_by_id(server.global_sensor_data,dvid);
+        if(sd == NULL)
+                return -1;
+        if(len >8)
+                len = 8;
+        memcpy(buf,sd->data,len);
+        return len;
 }
