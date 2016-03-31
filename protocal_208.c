@@ -107,15 +107,15 @@ static int slip_decode(const char *src,int len_src,char *dest)
 
 int sensor_data_to_slip_208(struct sensor_data *sd,char *slip,int size)
 {
-        char buf[100] ={0};
+        char buf[8] ={0};
 
         sensor_data_debug(sd);
-        int r = device_v2chararray(sd->id,sd->type,sd->value,buf,sizeof(buf));
+        int r = protocal208_sd2data(sd,buf,sizeof(buf));
         if(r < 0){
-                printf("device_v2chararray\n");
+                printf("protocal208_sd2data\n");
                 return -1;
         }
-        int len = 24; 			// magic number
+        int len = 24; 			// magic number 
         if(2*len > size){
                 printf("error..........\n");
                 return -1;
@@ -184,11 +184,8 @@ void protocal208_cmd_debug(struct protocal208_cmd *cmd)
         printf("cmd:%d\tdevice_id:%d\n",cmd->cmd,cmd->device_id);
 }
 
-int protocal208_sd2data(int dvid,char *buf,int len)
+int protocal208_sd2data(struct sensor_data *sd,char *buf,int len)
 {
-        struct sensor_data *sd = sdlist_find_by_id(server.global_sensor_data,dvid);
-        if(sd == NULL)
-                return -1;
         if(len >8)
                 len = 8;
         memcpy(buf,sd->data,len);

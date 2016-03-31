@@ -71,8 +71,6 @@ static void p208_read_handler(aeEventLoop *el,int fd,void *privdata,int mask)
                                 }else{
                                         printf("有此传感器数据 device_id:%d\n",cmd.device_id);
                                         int l = sensor_data_to_slip_208(sd,buf,sizeof(buf));
-                                        printf("l=%d\n",l);
-                                        hexprint("sensor data encode",buf,l);
                                         if(l > 0){
                                                 printf("返回给208 client device_id:%d\n",cmd.device_id);
                                                 write(c->fd,buf,l);

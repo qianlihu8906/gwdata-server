@@ -21,5 +21,5 @@ void protocal208_cmd_debug(struct protocal208_cmd *cmd);
 
 int eof_to_slip_208(char *slip,int size);
 int protocal208_cmd_to_slip(struct protocal208_cmd *cmd,char *slip,int size);
-int protocal208_sd2data(int dvid,char *buf,int len);
+int protocal208_sd2data(struct sensor_data *sd,char *buf,int len);
 #endif

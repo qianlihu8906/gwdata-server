@@ -6,7 +6,6 @@
 
 #include "devices.h"
 #include "debug.h"
-#include "protocal_208.h"
 
 
 #define ARRAY_SIZE(a)   (sizeof(a)/sizeof(a[0]))
@@ -21,7 +20,7 @@ static cJSON *temp_v2json(int id,const char *data,int len)
 
 static int temp_v2chararray(int id,cJSON *value,char *buf,int len)
 {
-        return protocal208_sd2data(id,buf,len);
+        return -1;
 }
 
 static int temp_v2cloud(int id,cJSON *value,char *buf,int len)
@@ -42,7 +41,7 @@ static cJSON *light_v2json(int id,const char *data,int len)
 
 static int light_v2chararray(int id,cJSON *value,char *buf,int len)  //NOTICE  p208 need it
 {
-        return protocal208_sd2data(id,buf,len);
+        return -1;
 }
 
 static int light_v2cloud(int id,cJSON *value,char *buf,int len)
@@ -124,7 +123,7 @@ static cJSON *acceleration_v2json(int id,const char *data,int len)
 
 static int acceleration_v2chararray(int id,cJSON *value,char *buf,int len)
 {
-        return protocal208_sd2data(id,buf,len);
+        return -1;
 }
 
 static int acceleration_v2cloud(int id,cJSON *value,char *buf,int len)
@@ -147,7 +146,7 @@ static cJSON *magnetic_v2json(int id,const char *data,int len)
 
 static int magnetic_v2chararray(int id,cJSON *value,char *buf,int len)
 {
-        return protocal208_sd2data(id,buf,len);
+        return -1;
 }
 
 static int magnetic_v2cloud(int id,cJSON *value,char *buf,int len)
@@ -164,7 +163,7 @@ cJSON *rfid_v2json(int id,const char *data,int len)
 
 static int rfid_v2chararray(int id,cJSON *value,char *buf,int len)
 {
-        return protocal208_sd2data(id,buf,len);
+        return -1;
 }
 static int rfid_v2cloud(int id,cJSON *value,char *buf,int len)
 {

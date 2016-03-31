@@ -200,7 +200,7 @@ struct sensor_data *slip_to_sensor_data(const char *slip,int len)
 {
         char data[len];
         int r = slip_decode(slip,len,data);
-        hexprint("decode",data,r);
+        printf("decode r=%d\n",r);
         if(r < 3){                            // dvid,type,transfer_type
                 return NULL;
         }
