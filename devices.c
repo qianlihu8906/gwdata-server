@@ -442,7 +442,7 @@ static struct devices devices[] = {
     {0x10, temp_v2json, temp_v2chararray, temp_v2cloud},    //温度
     {0x11, temp_v2json, temp_v2chararray, temp_v2cloud},    //湿度
     {0x12, light_v2json, light_v2chararray, light_v2cloud}, //光照
-    {0x16, light_v2json, light_v2chararray, light_v2cloud}, //��ѹ
+    {0x16, light_v2json, light_v2chararray, light_v2cloud}, //气压
     {0x13, light_v2json, light_v2chararray, light_v2cloud}, //空气质量
     {0x1d, light_v2json, light_v2chararray, light_v2cloud}, //烟雾
     {0x1a, light_v2json, light_v2chararray, light_v2cloud}, //二氧化碳
