@@ -439,34 +439,33 @@ struct devices {
 };
 
 static struct devices devices[] = {
-    {0x10, temp_v2json, temp_v2chararray, temp_v2cloud},    //�¶�
-    {0x11, temp_v2json, temp_v2chararray, temp_v2cloud},    //ʪ��
-    {0x12, light_v2json, light_v2chararray, light_v2cloud}, //����
+    {0x10, temp_v2json, temp_v2chararray, temp_v2cloud},    //温度
+    {0x11, temp_v2json, temp_v2chararray, temp_v2cloud},    //湿度
+    {0x12, light_v2json, light_v2chararray, light_v2cloud}, //光照
     {0x16, light_v2json, light_v2chararray, light_v2cloud}, //��ѹ
-    {0x13, light_v2json, light_v2chararray, light_v2cloud}, //��ȼ����
-    {0x1d, light_v2json, light_v2chararray, light_v2cloud}, //����
-    {0x1a, light_v2json, light_v2chararray, light_v2cloud}, //������̼
-    {0x18, led_v2json, led_v2chararray, led_v2cloud},       //�̵���
-    {0x14, led_v2json, led_v2chararray, led_v2cloud}, //��������
-    {0x22, led_v2json, led_v2chararray, led_v2cloud}, //���ⷴ��
-    {0x23, led_v2json, led_v2chararray, led_v2cloud}, //��������
-    {0x24, led_v2json, led_v2chararray, led_v2cloud}, //����
-    {0x25, led_v2json, led_v2chararray, led_v2cloud}, //����
-    {0x26, led_v2json, led_v2chararray, led_v2cloud}, //����
-    {0x27, led_v2json, led_v2chararray, led_v2cloud}, //����
-    {0x29, rfid_v2json, rfid_v2chararray, rfid_v2cloud}, //����
+    {0x13, light_v2json, light_v2chararray, light_v2cloud}, //空气质量
+    {0x1d, light_v2json, light_v2chararray, light_v2cloud}, //烟雾
+    {0x1a, light_v2json, light_v2chararray, light_v2cloud}, //二氧化碳
+    {0x18, led_v2json, led_v2chararray, led_v2cloud},       //继电器
+    {0x14, led_v2json, led_v2chararray, led_v2cloud},       //人体红外
+    {0x22, led_v2json, led_v2chararray, led_v2cloud},       //红外反射
+    {0x23, led_v2json, led_v2chararray, led_v2cloud},       //触摸按键
+    {0x24, led_v2json, led_v2chararray, led_v2cloud},       //声音
+    {0x25, led_v2json, led_v2chararray, led_v2cloud},       //雨滴
+    {0x26, led_v2json, led_v2chararray, led_v2cloud},       //火焰
+    {0x27, led_v2json, led_v2chararray, led_v2cloud},       //震动
+    {0x29, rfid_v2json, rfid_v2chararray, rfid_v2cloud},    // 13.56读卡器
     {0x15, acceleration_v2json, acceleration_v2chararray,
-     acceleration_v2cloud}, //���ٶ�
-    {0x20, magnetic_v2json, magnetic_v2chararray, magnetic_v2cloud}, //�ų�
-    {0x29, rfid_v2json, rfid_v2chararray, rfid_v2cloud},
+     acceleration_v2cloud},                                          //六轴
+    {0x20, magnetic_v2json, magnetic_v2chararray, magnetic_v2cloud}, //磁场
     {0x41, temp_and_humi_v2json, temp_and_humi_v2chararray,
-     temp_and_humi_v2cloud},
-    {0x43, light_v2json, light_v2chararray, light_v2cloud}, // ph
-    {0x2A, closet_v2json, closet_v2chararray, closet_v2cloud}, //�����¹�
-    {0x3A, heart_v2json, heart_v2chararay, heart_v2cloud}, // ���ʴ�����
-    {0x44, tiwen_v2json, tiwen_v2chararray, tiwen_v2cloud},       //����
-    {0x42, xueyang_v2json, xueyang_v2chararray, xueyang_v2cloud}, //Ѫ��
-    {0x45, xueya_v2json, xueya_v2chararray, xueya_v2cloud},       //Ѫѹ
+     temp_and_humi_v2cloud},                                      //温湿度
+    {0x43, light_v2json, light_v2chararray, light_v2cloud},       // ph
+    {0x2A, closet_v2json, closet_v2chararray, closet_v2cloud},    //衣柜
+    {0x3A, heart_v2json, heart_v2chararay, heart_v2cloud},        // 心率
+    {0x44, tiwen_v2json, tiwen_v2chararray, tiwen_v2cloud},       //体温
+    {0x42, xueyang_v2json, xueyang_v2chararray, xueyang_v2cloud}, //血氧
+    {0x45, xueya_v2json, xueya_v2chararray, xueya_v2cloud},       //血压
 
 };
 
