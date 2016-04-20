@@ -433,6 +433,9 @@ static int xueya_v2cloud(int id, cJSON *value, unsigned char *buf, int len) {
         return 1;
 }
 
+static cJSON *environment_v2json(int id, const unsigned char *data, int len) {
+}
+
 struct devices {
         int type;
         cJSON *(*v2json)(int id, const unsigned char *data, int len);
