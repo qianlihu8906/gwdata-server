@@ -616,6 +616,7 @@ static struct devices devices[] = {
         {0x1a, light_v2json, light_v2chararray, light_v2cloud}, //二氧化碳
 	{0x1f,display_v2json,display_v2chararray,display_v2cloud}, //数码管
 	{0x21,motor_v2json,motor_v2chararray,motor_v2cloud},//步进电机
+	{0x19,motor_v2json,motor_v2chararray,motor_v2cloud},//直流电机
         {0x18, led_v2json, led_v2chararray, led_v2cloud},       //继电器
         {0x14, led_v2json, led_v2chararray, led_v2cloud},       //人体红外
         {0x22, led_v2json, led_v2chararray, led_v2cloud},       //红外反射
@@ -625,6 +626,7 @@ static struct devices devices[] = {
         {0x26, led_v2json, led_v2chararray, led_v2cloud},       //火焰
         {0x27, led_v2json, led_v2chararray, led_v2cloud},       //震动
         {0x29, rfid_v2json, rfid_v2chararray, rfid_v2cloud},    // 13.56读卡器
+        {0x28, rfid_v2json, rfid_v2chararray, rfid_v2cloud},    // 125读卡器
 	{0x30, environment_v2json, environment_v2chararray, environment_v2cloud},       //空气温度
 	{0x31, environment_v2json, environment_v2chararray, environment_v2cloud},       //空气湿度
 	{0x34, environment_p_v2json, environment_p_v2chararray, environment_p_v2cloud},       //大气压力
