@@ -9,6 +9,59 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
+static cJSON *car_v2json(int id,const unsigned char *data,int len)
+{
+	int function = (unsigned char)data[0];
+	char buf[128] = {0};
+	printf("Enter %s\n",__func__);
+	switch (data[0]){
+		case 0x01:{	//小车状态
+			int value = (unsigned char)data[1];
+			snprintf(buf,sizeof(buf),"%d,%d",function,value);}
+			break;
+		case 0x02:{	//小车速度
+			int value = (unsigned char)data[1];
+			snprintf(buf,sizeof(buf),"%d,%d",function,value);}
+			break;
+		case 0x03:{	//小车GPS定位信息
+			int coordinate_x = (unsigned char)data[1];
+			int coordinate_y = (unsigned char)data[2];
+			snprintf(buf,sizeof(buf),"%d,%d,%d",function,coordinate_x,coordinate_y);}
+			break;
+		case 0x04:{	//RFID卡号
+			int32_t card_id;
+			card_id = data[1]<<24|data[2]<<16|data[3]<<8|data[4];
+			snprintf(buf,sizeof(buf),"%d,%u",function,card_id);}
+			break;
+		default:
+        		break;
+	}
+	printf("exit %s\n",__func__);
+        return cJSON_CreateString(buf);
+}
+
+static int car_v2chararray(int id,cJSON *value,unsigned char *buf,int len)
+{
+        printf("Enter %s\n",__func__);
+	memset(buf,0,2);
+	char bufer[10] = {0};
+	strcpy(bufer,value->valuestring);
+	char *car_value;
+	car_value = strtok(bufer,",");
+	buf[0]=atoi(car_value);
+	car_value = strtok(NULL,",");
+	buf[1]=atoi(car_value);
+	printf("exit %s\n",__func__);
+	return 2;
+}
+
+static int car_v2cloud(int id,cJSON *value,unsigned char *buf,int len)
+{
+        int v = atoi(value->valuestring);
+        buf[0] = v;
+        return 1;
+}
+
 static cJSON *temp_v2json(int id, const unsigned char *data, int len) {
         int v = data[1];
         char buf[128] = {0};
@@ -46,6 +99,57 @@ static int light_v2cloud(int id, cJSON *value, unsigned char *buf, int len) {
         memcpy(buf, &v, sizeof(v));
 
         return sizeof(v);
+}
+
+static cJSON *motor_v2json(int id,const unsigned char *data,int len)
+{
+        int v_1 = data[0];
+	int v_2 = data[1];
+        char buf[128] = {0};
+        snprintf(buf,sizeof(buf),"%d,%d",v_1,v_2);
+        return cJSON_CreateString(buf);
+}
+
+static int motor_v2chararray(int id,cJSON *value,unsigned char *buf,int len)
+{
+        memset(buf,0,2);
+	char bufer[10] = {0};
+	strncpy(bufer,value->valuestring,sizeof(bufer)-1);
+	char *tmp;
+	tmp = strtok(bufer,",");
+	buf[0]=atoi(tmp);
+	tmp = strtok(NULL,",");
+	if(tmp == NULL)
+		return 1;
+	buf[1]=atoi(tmp);
+	return 2;
+}
+
+static int motor_v2cloud(int id,cJSON *value,unsigned char *buf,int len)
+{
+	
+        return -1;
+}
+
+static cJSON *display_v2json(int id,const unsigned char *data,int len)
+{
+	signed short int v = data[0]|data[1]<<8;
+        char buf[128] = {0};
+        snprintf(buf,sizeof(buf),"%d",v);
+        return cJSON_CreateString(buf);
+}
+
+static int display_v2chararray(int id,cJSON *value,unsigned char *buf,int len)
+{
+	int v = atoi(value->valuestring);
+        buf[0] = v & 0xFF;
+	buf[1] = v >> 8;
+        return 2;
+}
+
+static int display_v2cloud(int id,cJSON *value,unsigned char *buf,int len)
+{
+        return -1;
 }
 
 static cJSON *led_v2json(int id, const unsigned char *data, int len) {
@@ -432,9 +536,68 @@ static int xueya_v2cloud(int id, cJSON *value, unsigned char *buf, int len) {
         buf[0] = 0;
         return 1;
 }
-
+/*环境监测*/
 static cJSON *environment_v2json(int id, const unsigned char *data, int len) {
+	int16_t v = *(int16_t *)data;
+        v = be16toh(v);
+        char buf[128] = {0};
+        snprintf(buf, sizeof(buf), "%.1f", v/10.0);
+        return cJSON_CreateString(buf);
 }
+
+static int environment_v2chararray(int id, cJSON *value, unsigned char *buf, int len) {
+        return -1;
+}
+
+static int environment_v2cloud(int id, cJSON *value, unsigned char *buf, int len) {
+        uint16_t v = atoi(value->valuestring);
+        v = htobe16(v);
+        memcpy(buf, &v, sizeof(v));
+
+        return sizeof(v);
+}
+/*环境监测--bool量*/
+static cJSON *environment_b_v2json(int id, const unsigned char *data, int len) {
+	int16_t v = *(int16_t *)data;
+	if(v == 0x0000)
+        	return cJSON_CreateString("false");
+	else
+		return cJSON_CreateString("true");
+}
+
+static int environment_b_v2chararray(int id, cJSON *value, unsigned char *buf, int len) {
+        return -1;
+}
+
+static int environment_b_v2cloud(int id, cJSON *value, unsigned char *buf, int len) {
+        uint16_t v = atoi(value->valuestring);
+        v = htobe16(v);
+        memcpy(buf, &v, sizeof(v));
+
+        return sizeof(v);
+}
+
+/*环境监测--大气压*/
+static cJSON *environment_p_v2json(int id, const unsigned char *data, int len) {
+	int16_t v = *(int16_t *)data;
+        v = be16toh(v);
+        char buf[128] = {0};
+        snprintf(buf, sizeof(buf), "%d", v);
+        return cJSON_CreateString(buf);
+}
+
+static int environment_p_v2chararray(int id, cJSON *value, unsigned char *buf, int len) {
+        return -1;
+}
+
+static int environment_p_v2cloud(int id, cJSON *value, unsigned char *buf, int len) {
+        uint16_t v = atoi(value->valuestring);
+        v = htobe16(v);
+        memcpy(buf, &v, sizeof(v));
+
+        return sizeof(v);
+}
+
 
 struct devices {
         int type;
@@ -451,6 +614,8 @@ static struct devices devices[] = {
         {0x13, light_v2json, light_v2chararray, light_v2cloud}, //空气质量
         {0x1d, light_v2json, light_v2chararray, light_v2cloud}, //烟雾
         {0x1a, light_v2json, light_v2chararray, light_v2cloud}, //二氧化碳
+	{0x1f,display_v2json,display_v2chararray,display_v2cloud}, //数码管
+	{0x21,motor_v2json,motor_v2chararray,motor_v2cloud},//步进电机
         {0x18, led_v2json, led_v2chararray, led_v2cloud},       //继电器
         {0x14, led_v2json, led_v2chararray, led_v2cloud},       //人体红外
         {0x22, led_v2json, led_v2chararray, led_v2cloud},       //红外反射
@@ -460,6 +625,13 @@ static struct devices devices[] = {
         {0x26, led_v2json, led_v2chararray, led_v2cloud},       //火焰
         {0x27, led_v2json, led_v2chararray, led_v2cloud},       //震动
         {0x29, rfid_v2json, rfid_v2chararray, rfid_v2cloud},    // 13.56读卡器
+	{0x30, environment_v2json, environment_v2chararray, environment_v2cloud},       //空气温度
+	{0x31, environment_v2json, environment_v2chararray, environment_v2cloud},       //空气湿度
+	{0x34, environment_p_v2json, environment_p_v2chararray, environment_p_v2cloud},       //大气压力
+	{0x35, environment_v2json, environment_v2chararray, environment_v2cloud},       //风速
+	{0x36, environment_v2json, environment_v2chararray, environment_v2cloud},       //风向
+	{0x37, environment_b_v2json, environment_b_v2chararray, environment_b_v2cloud},       //雨雪
+	{0x38, environment_v2json, environment_v2chararray, environment_v2cloud},       //PM2.5
         {0x15, acceleration_v2json, acceleration_v2chararray,
                 acceleration_v2cloud},                                          //六轴
         {0x20, magnetic_v2json, magnetic_v2chararray, magnetic_v2cloud}, //磁场
@@ -471,6 +643,7 @@ static struct devices devices[] = {
         {0x44, tiwen_v2json, tiwen_v2chararray, tiwen_v2cloud},       //体温
         {0x42, xueyang_v2json, xueyang_v2chararray, xueyang_v2cloud}, //血氧
         {0x45, xueya_v2json, xueya_v2chararray, xueya_v2cloud},       //血压
+	{0xA1,car_v2json,car_v2chararray,car_v2cloud},//小车
 
 };
 
