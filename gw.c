@@ -32,12 +32,16 @@ void init_server()
         server.json_fd = anetTcpServer(server.json_neterr,51001,NULL,511);
         anetNonBlock(NULL,server.json_fd);
 
+        server.json_fd6 = anetTcp6Server(server.json_neterr,51001,NULL,511);
+        anetNonBlock(NULL,server.json_fd6);
+
         server.p208_fd = anetTcpServer(server.p208_neterr,51000,NULL,511);
         anetNonBlock(NULL,server.p208_fd);
 
         aeCreateFileEvent(server.el,server.json_fd,AE_READABLE,json_server_acceptHandler,NULL);
         aeCreateFileEvent(server.el,server.p208_fd,AE_READABLE,p208_server_acceptHandler,NULL);
-#if 0       
+        aeCreateFileEvent(server.el,server.json_fd6,AE_READABLE,json_server_acceptHandler,NULL);
+#if 1      
         gwseriport_create("/dev/ttyUSB0",115200);
         gwseriport_create("/dev/ttyUSB1",115200);
         gwseriport_create("/dev/ttyUSB2",115200);

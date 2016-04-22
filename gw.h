@@ -13,6 +13,7 @@
 struct gwdata_server{
         int json_fd;
         int json_port;
+        int json_fd6;
         
         int p208_fd;
         int p208_port;
