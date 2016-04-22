@@ -7,6 +7,11 @@ AS=$(CROSS)as
 AR=$(CROSS)ar
 OBJCOPY=$(CROSS)objcopy
 OBJDUMP=$(CROSS)objdump
+
+ifeq ($(board),)
+	CFLAGS = -DMS308
+endif
+
 ifeq ($(board),ms308)
 	CFLAGS = -DMS308
 endif
