@@ -1,4 +1,4 @@
-CROSS=arm-linux-gnueabihf-
+#CROSS=arm-linux-gnueabihf-
 
 CC=$(CROSS)gcc
 CPP=$(CROSS)g++
@@ -7,8 +7,14 @@ AS=$(CROSS)as
 AR=$(CROSS)ar
 OBJCOPY=$(CROSS)objcopy
 OBJDUMP=$(CROSS)objdump
+ifeq ($(board),ms308)
+	CFLAGS = -DMS308
+endif
+ifeq ($(board),ms309)
+	CFLAGS = -DMS309
+endif
 
-CFLAGS =  -Wall -I.  -D_GNU_SOURCE 
+CFLAGS +=  -Wall -I.  -D_GNU_SOURCE 
 LDFLAGS = -lm 
 
 COPY        := cp
