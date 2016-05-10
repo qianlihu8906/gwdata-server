@@ -598,6 +598,25 @@ static int environment_p_v2cloud(int id, cJSON *value, unsigned char *buf, int l
         return sizeof(v);
 }
 
+/*浇花*/
+static cJSON *flowers_v2json(int id, const unsigned char *data, int len) {
+	int v = (int)data[1];
+        char buf[128] = {0};
+        snprintf(buf, sizeof(buf), "%d", v);
+        return cJSON_CreateString(buf);
+}
+
+static int flowers_v2chararray(int id, cJSON *value, unsigned char *buf, int len) {
+        return -1;
+}
+
+static int flowers_v2cloud(int id, cJSON *value, unsigned char *buf, int len) {
+        uint16_t v = atoi(value->valuestring);
+        v = htobe16(v);
+        memcpy(buf, &v, sizeof(v));
+
+        return sizeof(v);
+}
 
 struct devices {
         int type;
@@ -607,46 +626,46 @@ struct devices {
 };
 
 static struct devices devices[] = {
+	{0x09, flowers_v2json, flowers_v2chararray, flowers_v2cloud},       //浇花土壤温度
         {0x10, temp_v2json, temp_v2chararray, temp_v2cloud},    //温度
         {0x11, temp_v2json, temp_v2chararray, temp_v2cloud},    //湿度
         {0x12, light_v2json, light_v2chararray, light_v2cloud}, //光照
+	{0x13, light_v2json, light_v2chararray, light_v2cloud}, //可燃气体
+	{0x14, led_v2json, led_v2chararray, led_v2cloud},       //人体红外
+	{0x15, acceleration_v2json, acceleration_v2chararray,acceleration_v2cloud},  //六轴
         {0x16, light_v2json, light_v2chararray, light_v2cloud}, //气压
-        {0x13, light_v2json, light_v2chararray, light_v2cloud}, //空气质量
+	{0x18, led_v2json, led_v2chararray, led_v2cloud},       //继电器
+	{0x19,motor_v2json,motor_v2chararray,motor_v2cloud},	//直流电机
+	{0x1a, light_v2json, light_v2chararray, light_v2cloud}, //二氧化碳
         {0x1d, light_v2json, light_v2chararray, light_v2cloud}, //烟雾
-        {0x1a, light_v2json, light_v2chararray, light_v2cloud}, //二氧化碳
 	{0x1f,display_v2json,display_v2chararray,display_v2cloud}, //数码管
-	{0x21,motor_v2json,motor_v2chararray,motor_v2cloud},//步进电机
-	{0x19,motor_v2json,motor_v2chararray,motor_v2cloud},//直流电机
-        {0x18, led_v2json, led_v2chararray, led_v2cloud},       //继电器
-        {0x14, led_v2json, led_v2chararray, led_v2cloud},       //人体红外
+	{0x20, magnetic_v2json, magnetic_v2chararray, magnetic_v2cloud}, //磁场
+	{0x21,motor_v2json,motor_v2chararray,motor_v2cloud},	//步进电机
         {0x22, led_v2json, led_v2chararray, led_v2cloud},       //红外反射
         {0x23, led_v2json, led_v2chararray, led_v2cloud},       //触摸按键
         {0x24, led_v2json, led_v2chararray, led_v2cloud},       //声音
         {0x25, led_v2json, led_v2chararray, led_v2cloud},       //雨滴
         {0x26, led_v2json, led_v2chararray, led_v2cloud},       //火焰
         {0x27, led_v2json, led_v2chararray, led_v2cloud},       //震动
+	{0x28, rfid_v2json, rfid_v2chararray, rfid_v2cloud},    // 125读卡器
         {0x29, rfid_v2json, rfid_v2chararray, rfid_v2cloud},    // 13.56读卡器
-        {0x28, rfid_v2json, rfid_v2chararray, rfid_v2cloud},    // 125读卡器
+	{0x2A, closet_v2json, closet_v2chararray, closet_v2cloud},    //衣柜
+	{0x2C, flowers_v2json, flowers_v2chararray, flowers_v2cloud}, //土壤湿度
 	{0x30, environment_v2json, environment_v2chararray, environment_v2cloud},       //空气温度
 	{0x31, environment_v2json, environment_v2chararray, environment_v2cloud},       //空气湿度
-	{0x34, environment_p_v2json, environment_p_v2chararray, environment_p_v2cloud},       //大气压力
+	{0x34, environment_p_v2json, environment_p_v2chararray, environment_p_v2cloud}, //大气压力
 	{0x35, environment_v2json, environment_v2chararray, environment_v2cloud},       //风速
 	{0x36, environment_v2json, environment_v2chararray, environment_v2cloud},       //风向
-	{0x37, environment_b_v2json, environment_b_v2chararray, environment_b_v2cloud},       //雨雪
+	{0x37, environment_b_v2json, environment_b_v2chararray, environment_b_v2cloud}, //雨雪
 	{0x38, environment_v2json, environment_v2chararray, environment_v2cloud},       //PM2.5
-        {0x15, acceleration_v2json, acceleration_v2chararray,
-                acceleration_v2cloud},                                          //六轴
-        {0x20, magnetic_v2json, magnetic_v2chararray, magnetic_v2cloud}, //磁场
-        {0x41, temp_and_humi_v2json, temp_and_humi_v2chararray,
-                temp_and_humi_v2cloud},                                      //温湿度
-        {0x43, light_v2json, light_v2chararray, light_v2cloud},       // ph
-        {0x2A, closet_v2json, closet_v2chararray, closet_v2cloud},    //衣柜
+	{0x39, motor_v2json,motor_v2chararray,motor_v2cloud},	      //浇花水泵
         {0x3A, heart_v2json, heart_v2chararay, heart_v2cloud},        // 心率
+        {0x41, temp_and_humi_v2json, temp_and_humi_v2chararray,temp_and_humi_v2cloud},//温湿度
+	{0x42, xueyang_v2json, xueyang_v2chararray, xueyang_v2cloud}, //血氧
+        {0x43, light_v2json, light_v2chararray, light_v2cloud},       // ph
         {0x44, tiwen_v2json, tiwen_v2chararray, tiwen_v2cloud},       //体温
-        {0x42, xueyang_v2json, xueyang_v2chararray, xueyang_v2cloud}, //血氧
         {0x45, xueya_v2json, xueya_v2chararray, xueya_v2cloud},       //血压
-	{0xA1,car_v2json,car_v2chararray,car_v2cloud},//小车
-
+	{0xA1, car_v2json,car_v2chararray,car_v2cloud},//小车
 };
 
 static struct devices *find_device(int device_type) {

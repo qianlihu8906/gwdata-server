@@ -200,8 +200,9 @@ struct sensor_data *slip_to_sensor_data(const char *slip,int len)
 {
         char data[len];
         int r = slip_decode(slip,len,data);
-        printf("decode r=%d\n",r);
+        fprintf(stdout,"slip_decode r=%d\n",r);
         if(r < 3){                            // dvid,type,transfer_type
+		fprintf(stderr,"serial packet error <3 \n");
                 return NULL;
         }
         int dvid = (unsigned char)data[0];
@@ -209,12 +210,14 @@ struct sensor_data *slip_to_sensor_data(const char *slip,int len)
         int data_len = r - 3;
         int transfer_type = (data[2]&0xf0) >> 4;
         if(transfer_type < 0||transfer_type >= (ARRAY_SIZE(transfer_types))){
+		fprintf(stderr,"serial transfer_type error \n");
                 return NULL;
         }
         const char *transfer_type_str = transfer_types[transfer_type];
 
         cJSON *value = device_v2json(dvid,dvtype,data+3,data_len);
         if(value == NULL){
+		fprintf(stderr,"serial device_v2json error \n");
                 return NULL;
         }
 

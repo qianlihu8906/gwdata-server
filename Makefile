@@ -1,4 +1,4 @@
-#CROSS=arm-linux-gnueabihf-
+CROSS=arm-linux-gnueabihf-
 
 CC=$(CROSS)gcc
 CPP=$(CROSS)g++

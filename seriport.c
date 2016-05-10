@@ -78,6 +78,7 @@ static void seriportHandler(aeEventLoop *el,int fd,void *privdata,int mask)
                 hexprint("read seriport",buf,r);
                 sd = slip_to_sensor_data(buf,r);
                 if(sd != NULL){
+			sensor_data_debug(sd);
                         snprintf(s->transfer_media,sizeof(s->transfer_media),"%s",sd->transfer_type);
                         sdlist_check_push(server.global_sensor_data,sd);
 
@@ -85,7 +86,10 @@ static void seriportHandler(aeEventLoop *el,int fd,void *privdata,int mask)
                         gw_cloud_broadcast(sd);
                         sensor_data_release(sd);
 
-                }
+                }else{
+			fprintf(stderr,"slip_to_sensor_data return NULL\n");
+		} 
+
         }
 }
 
